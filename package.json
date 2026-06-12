@@ -1,0 +1,11 @@
+{
+  "name": "english-review-checkin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node server.mjs",
+    "check": "node --check server.mjs && node --check src/storage.js && node --check src/main.js && node --check service-worker.js",
+    "build": "npm run check"
+  }
+}

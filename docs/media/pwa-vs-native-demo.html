@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PWA 和手机 App 封装区别</title>
+    <style>
+      :root {
+        color: #111111;
+        background: #dfd5c6;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+          "Microsoft YaHei", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        display: grid;
+        min-height: 100vh;
+        margin: 0;
+        place-items: center;
+        padding: 18px;
+        background:
+          radial-gradient(#cfc2b0 1px, transparent 1px) 0 0 / 22px 22px,
+          #dfd5c6;
+      }
+
+      .stage {
+        width: min(100%, 920px);
+        border: 3px solid #111111;
+        border-radius: 24px;
+        background: #fcf6e8;
+        box-shadow: 8px 8px 0 rgba(17, 17, 17, 0.24);
+        overflow: hidden;
+      }
+
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        border-bottom: 3px solid #111111;
+        padding: 16px 20px;
+        background: #facc15;
+      }
+
+      h1,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: clamp(1.35rem, 4vw, 2rem);
+      }
+
+      .controls {
+        display: flex;
+        gap: 10px;
+      }
+
+      button {
+        min-height: 42px;
+        border: 2px solid #111111;
+        border-radius: 12px;
+        padding: 0 14px;
+        background: #fffef9;
+        box-shadow: 3px 3px 0 #111111;
+        cursor: pointer;
+        font-weight: 900;
+      }
+
+      .screen {
+        position: relative;
+        height: min(62vw, 520px);
+        min-height: 460px;
+        overflow: hidden;
+      }
+
+      .scene {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        grid-template-columns: 0.95fr 1.05fr;
+        gap: 24px;
+        align-items: center;
+        padding: 28px;
+        opacity: 0;
+        transform: translateX(28px);
+      }
+
+      .is-playing .scene {
+        animation: sceneShow 20s linear infinite;
+      }
+
+      .scene:nth-child(1) {
+        animation-delay: 0s;
+      }
+
+      .scene:nth-child(2) {
+        animation-delay: 5s;
+      }
+
+      .scene:nth-child(3) {
+        animation-delay: 10s;
+      }
+
+      .scene:nth-child(4) {
+        animation-delay: 15s;
+      }
+
+      @keyframes sceneShow {
+        0%,
+        4% {
+          opacity: 0;
+          transform: translateX(28px);
+        }
+        8%,
+        22% {
+          opacity: 1;
+          transform: translateX(0);
+        }
+        25%,
+        100% {
+          opacity: 0;
+          transform: translateX(-28px);
+        }
+      }
+
+      .phone {
+        width: min(100%, 260px);
+        margin: 0 auto;
+        border: 4px solid #111111;
+        border-radius: 32px;
+        background: #fffef9;
+        box-shadow: 7px 7px 0 #111111;
+        overflow: hidden;
+      }
+
+      .phone-top {
+        padding: 12px;
+        background: #facc15;
+        border-bottom: 3px solid #111111;
+        font-size: 0.78rem;
+        font-weight: 900;
+      }
+
+      .phone-body {
+        display: grid;
+        min-height: 300px;
+        place-items: center;
+        padding: 18px;
+        text-align: center;
+      }
+
+      .icon {
+        display: grid;
+        width: 82px;
+        height: 82px;
+        margin: 0 auto 16px;
+        place-items: center;
+        border: 3px solid #111111;
+        border-radius: 22px;
+        background: #f97316;
+        box-shadow: 4px 4px 0 #111111;
+        font-size: 2rem;
+      }
+
+      .phone p {
+        color: #444444;
+        font-size: 0.9rem;
+        font-weight: 800;
+        line-height: 1.5;
+      }
+
+      .copy {
+        display: grid;
+        gap: 16px;
+      }
+
+      .copy h2 {
+        margin: 0;
+        font-size: clamp(1.45rem, 5vw, 2.5rem);
+        line-height: 1.1;
+      }
+
+      .copy ul {
+        display: grid;
+        gap: 10px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .copy li {
+        border: 2px solid #111111;
+        border-radius: 14px;
+        padding: 11px 13px;
+        background: #fffef9;
+        box-shadow: 3px 3px 0 #111111;
+        font-weight: 850;
+      }
+
+      .tag {
+        width: fit-content;
+        border: 2px solid #111111;
+        border-radius: 999px;
+        padding: 6px 10px;
+        background: #10b981;
+        color: #ffffff;
+        font-size: 0.82rem;
+        font-weight: 950;
+      }
+
+      .danger {
+        background: #ef4444;
+      }
+
+      .blue {
+        background: #0ea5e9;
+      }
+
+      .footer-note {
+        border-top: 2px solid #111111;
+        padding: 12px 18px;
+        background: #fffef9;
+        color: #444444;
+        font-size: 0.9rem;
+        font-weight: 800;
+      }
+
+      @media (max-width: 740px) {
+        .screen {
+          height: 720px;
+        }
+
+        .scene {
+          grid-template-columns: 1fr;
+          align-content: start;
+          gap: 20px;
+        }
+
+        header {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .controls {
+          width: 100%;
+        }
+
+        button {
+          flex: 1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="stage is-playing" id="stage">
+      <header>
+        <div>
+          <h1>PWA 和手机 App 封装区别</h1>
+          <p>给英语复习打卡 App 的路线选择</p>
+        </div>
+        <div class="controls">
+          <button type="button" id="replayButton">重播</button>
+          <button type="button" id="pauseButton">暂停</button>
+        </div>
+      </header>
+
+      <section class="screen" aria-label="路线区别动画">
+        <article class="scene">
+          <div class="phone">
+            <div class="phone-top">开发测试版</div>
+            <div class="phone-body">
+              <div>
+                <div class="icon">💻</div>
+                <p>手机访问电脑开的本地服务。</p>
+              </div>
+            </div>
+          </div>
+          <div class="copy">
+            <span class="tag danger">不适合日常使用</span>
+            <h2>电脑一关，手机就打不开</h2>
+            <ul>
+              <li>需要电脑一直开着 `npm run dev`</li>
+              <li>手机和电脑必须在同一个 Wi-Fi</li>
+              <li>换网络、出门、电脑睡眠都会失败</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="scene">
+          <div class="phone">
+            <div class="phone-top">在线 PWA</div>
+            <div class="phone-body">
+              <div>
+                <div class="icon">🌐</div>
+                <p>手机打开一个固定网址，然后添加到主屏幕。</p>
+              </div>
+            </div>
+          </div>
+          <div class="copy">
+            <span class="tag">推荐先做</span>
+            <h2>电脑关了也能用</h2>
+            <ul>
+              <li>App 文件放到 GitHub Pages / Cloudflare Pages</li>
+              <li>手机换 Wi-Fi、用流量也能打开</li>
+              <li>数据仍然保存在你的手机浏览器本地</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="scene">
+          <div class="phone">
+            <div class="phone-top">封装成手机 App</div>
+            <div class="phone-body">
+              <div>
+                <div class="icon">📦</div>
+                <p>把网页包进原生 App 壳里。</p>
+              </div>
+            </div>
+          </div>
+          <div class="copy">
+            <span class="tag blue">以后再考虑</span>
+            <h2>更像 App，但成本更高</h2>
+            <ul>
+              <li>需要额外工具，例如 Capacitor</li>
+              <li>iPhone 会遇到证书、签名、安装问题</li>
+              <li>每次更新也比网页部署麻烦</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="scene">
+          <div class="phone">
+            <div class="phone-top">建议路线</div>
+            <div class="phone-body">
+              <div>
+                <div class="icon">🍊</div>
+                <p>先做在线 PWA，稳定用起来。</p>
+              </div>
+            </div>
+          </div>
+          <div class="copy">
+            <span class="tag">最适合当前 MVP</span>
+            <h2>先上线一个网址，再加到手机桌面</h2>
+            <ul>
+              <li>不用电脑常开</li>
+              <li>不需要应用商店</li>
+              <li>后续真有必要，再封装成原生 App</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <p class="footer-note">
+        结论：现在先做在线 PWA。它最轻、最稳、最适合自用 MVP。
+      </p>
+    </main>
+
+    <script>
+      const stage = document.querySelector("#stage");
+      const replayButton = document.querySelector("#replayButton");
+      const pauseButton = document.querySelector("#pauseButton");
+
+      replayButton.addEventListener("click", () => {
+        stage.classList.remove("is-playing");
+        window.setTimeout(() => stage.classList.add("is-playing"), 20);
+      });
+
+      pauseButton.addEventListener("click", () => {
+        const isPlaying = stage.classList.toggle("is-playing");
+        pauseButton.textContent = isPlaying ? "暂停" : "播放";
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,496 @@
+import {
+  addReviewItem,
+  countDueItems,
+  exportBackup,
+  getActiveItems,
+  getReviewLimit,
+  getTodayCheckIn,
+  getTodaySession,
+  recordReviewResult,
+  saveDailyCheckIn,
+  saveTodaySession,
+  toDateOnly
+} from "./storage.js";
+
+const app = document.querySelector("#app");
+
+const uiState = {
+  tab: "review",
+  items: [],
+  session: [],
+  activeSessionEntry: null,
+  answerVisible: false,
+  recognition: null
+};
+
+app.innerHTML = `
+  <main class="phone-frame">
+    <header class="hero-bar">
+      <div class="brand-mark" aria-hidden="true">
+        <img src="assets/nami-avatar.jpg" alt="" />
+      </div>
+      <div class="brand-copy">
+        <p>娜美的航海英语手账</p>
+        <h1>ZenRepeat</h1>
+      </div>
+      <div class="streak-badge">
+        <span>打卡</span>
+        <strong id="checkinStatus">0 天</strong>
+      </div>
+    </header>
+
+    <section class="route-strip">
+      <span>英语日常打卡主线</span>
+      <strong id="sessionProgress">0 / 0</strong>
+    </section>
+
+    <section class="screen-area">
+      <section class="view" id="view-review" data-view="review"></section>
+      <section class="view" id="view-add" data-view="add" hidden></section>
+      <section class="view" id="view-library" data-view="library" hidden></section>
+      <section class="view" id="view-settings" data-view="settings" hidden></section>
+    </section>
+
+    <nav class="bottom-nav" aria-label="主导航">
+      <button class="nav-button is-active" type="button" data-tab="review">
+        <span>⚡</span>
+        <strong>复习</strong>
+      </button>
+      <button class="nav-button" type="button" data-tab="add">
+        <span>✍</span>
+        <strong>新增</strong>
+      </button>
+      <button class="nav-button" type="button" data-tab="library">
+        <span>🍊</span>
+        <strong>内容库</strong>
+      </button>
+      <button class="nav-button" type="button" data-tab="settings">
+        <span>฿</span>
+        <strong>备份</strong>
+      </button>
+    </nav>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </main>
+`;
+
+const views = {
+  review: document.querySelector("#view-review"),
+  add: document.querySelector("#view-add"),
+  library: document.querySelector("#view-library"),
+  settings: document.querySelector("#view-settings")
+};
+
+document.querySelectorAll(".nav-button").forEach((button) => {
+  button.addEventListener("click", () => switchTab(button.dataset.tab));
+});
+
+refreshApp();
+registerServiceWorker();
+
+function refreshApp() {
+  uiState.items = getActiveItems();
+  uiState.session = getTodaySession();
+  renderAll();
+}
+
+function renderAll() {
+  renderHeader();
+  renderReview();
+  renderAdd();
+  renderLibrary();
+  renderSettings();
+  setActiveTab(uiState.tab);
+}
+
+function renderHeader() {
+  const checkins = getCompletedCheckInCount();
+  const done = uiState.session.filter((entry) => entry.status === "done").length;
+  const total = uiState.session.length;
+  document.querySelector("#checkinStatus").textContent = `${checkins} 天`;
+  document.querySelector("#sessionProgress").textContent = total ? `${done} / ${total}` : "今日无任务";
+}
+
+function renderReview() {
+  const session = uiState.session;
+  const pendingEntry = session.find((entry) => entry.status === "pending");
+  uiState.activeSessionEntry = pendingEntry || null;
+
+  if (!pendingEntry) {
+    const summary = getTodaySummary();
+    views.review.innerHTML = `
+      <article class="poster-card empty-review">
+        <div class="poster-label">CLEAR</div>
+        <div class="empty-icon">🍊</div>
+        <h2>${session.length ? "今天打卡完成" : "今天没有到期复习"}</h2>
+        <p>${session.length ? "娜美的航线账本已经核对完毕。" : "新内容会在第 3 天进入复习。今天可以先新增一点日常英语。"}</p>
+        <div class="summary-row">
+          <span>今日任务</span>
+          <strong>${summary.completedCount} / ${summary.plannedCount}</strong>
+        </div>
+        <button class="primary-action" type="button" data-action="go-add">写下新的英语手账</button>
+      </article>
+    `;
+
+    views.review.querySelector("[data-action='go-add']").addEventListener("click", () => switchTab("add"));
+    saveCompletedCheckInIfNeeded(summary);
+    return;
+  }
+
+  const item = uiState.items.find((entry) => entry.id === pendingEntry.id);
+  if (!item) {
+    pendingEntry.status = "done";
+    saveTodaySession(session);
+    refreshApp();
+    return;
+  }
+
+  const promptText = pendingEntry.promptSide === "english" ? item.english : item.chinese;
+  const answerText = pendingEntry.promptSide === "english" ? item.chinese : item.english;
+  const promptLabel = pendingEntry.promptSide === "english" ? "英文提示" : "中文提示";
+  const nextStageText = getStageText(item.reviewCount);
+
+  views.review.innerHTML = `
+    <article class="poster-card">
+      <div class="poster-heading">
+        <strong>WANTED</strong>
+        <span>${promptLabel}</span>
+      </div>
+      <div class="stage-line">
+        <span>${nextStageText}</span>
+        <span>今日最多 ${getReviewLimit()} 条</span>
+      </div>
+      <div class="prompt-text">${escapeHtml(promptText)}</div>
+      <div class="answer-zone">
+        ${
+          uiState.answerVisible
+            ? `<div class="answer-card">${escapeHtml(answerText)}</div>`
+            : `<button class="reveal-button" type="button" data-action="reveal">翻开隐藏答案</button>`
+        }
+      </div>
+    </article>
+    <div class="feedback-grid" ${uiState.answerVisible ? "" : "hidden"}>
+      <button class="feedback forgot" type="button" data-feedback="forgot">
+        <strong>忘了</strong>
+        <span>1 天后</span>
+      </button>
+      <button class="feedback unclear" type="button" data-feedback="unclear">
+        <strong>模糊</strong>
+        <span>3 天后</span>
+      </button>
+      <button class="feedback familiar" type="button" data-feedback="familiar">
+        <strong>熟了</strong>
+        <span>下一档</span>
+      </button>
+    </div>
+  `;
+
+  views.review.querySelector("[data-action='reveal']")?.addEventListener("click", () => {
+    uiState.answerVisible = true;
+    renderReview();
+  });
+
+  views.review.querySelectorAll("[data-feedback]").forEach((button) => {
+    button.addEventListener("click", () => handleFeedback(button.dataset.feedback));
+  });
+}
+
+function renderAdd() {
+  views.add.innerHTML = `
+    <article class="panel-block">
+      <div class="section-title">
+        <h2>金库账本</h2>
+        <span>英文 + 中文</span>
+      </div>
+      <form class="add-form" id="addForm">
+        <label>
+          <span>英文内容</span>
+          <div class="voice-row">
+            <textarea id="englishInput" rows="4" autocomplete="off" placeholder="Time for bed."></textarea>
+            <button class="voice-button" type="button" data-voice="english" title="英文语音输入">
+              <span>🐌</span>
+              <small>听写</small>
+            </button>
+          </div>
+        </label>
+        <label>
+          <span>中文意思</span>
+          <div class="voice-row">
+            <textarea id="chineseInput" rows="4" autocomplete="off" placeholder="该睡觉了。"></textarea>
+            <button class="voice-button" type="button" data-voice="chinese" title="中文语音输入">
+              <span>🐌</span>
+              <small>听写</small>
+            </button>
+          </div>
+        </label>
+        <p class="helper-text" id="voiceStatus">点“听写”后，允许麦克风权限，然后直接说话。</p>
+        <button class="primary-action" type="submit">收入娜美的英语金库</button>
+      </form>
+    </article>
+  `;
+
+  views.add.querySelector("#addForm").addEventListener("submit", handleAddSubmit);
+  views.add.querySelectorAll("[data-voice]").forEach((button) => {
+    button.addEventListener("click", () => startVoiceInput(button.dataset.voice, button));
+  });
+}
+
+function renderLibrary() {
+  const itemCards = uiState.items
+    .map(
+      (item) => `
+        <li class="library-card">
+          <div>
+            <p class="library-english">${escapeHtml(item.english)}</p>
+            <p class="library-chinese">${escapeHtml(item.chinese)}</p>
+          </div>
+          <time datetime="${item.nextReviewAt}">下次复习：${item.nextReviewAt}</time>
+        </li>
+      `
+    )
+    .join("");
+
+  views.library.innerHTML = `
+    <article class="panel-block">
+      <div class="section-title">
+        <h2>橘子航线</h2>
+        <span>${uiState.items.length} 条</span>
+      </div>
+      ${
+        uiState.items.length
+          ? `<ul class="library-list">${itemCards}</ul>`
+          : `<div class="empty-box">还没有内容。先去“新增”写下一条英语。</div>`
+      }
+    </article>
+  `;
+}
+
+function renderSettings() {
+  const backup = exportBackup();
+  views.settings.innerHTML = `
+    <article class="panel-block">
+      <div class="section-title">
+        <h2>贝里管家</h2>
+        <span>只导出</span>
+      </div>
+      <div class="backup-card">
+        <p>数据只保存在本地。建议经常导出一份 JSON 备份，避免浏览器清理数据后丢失。</p>
+        <div class="backup-stats">
+          <span>内容 ${backup.items.length} 条</span>
+          <span>复习记录 ${backup.reviewLogs.length} 条</span>
+        </div>
+        <button class="primary-action" type="button" id="exportButton">导出 JSON 备份</button>
+      </div>
+    </article>
+  `;
+
+  views.settings.querySelector("#exportButton").addEventListener("click", handleExport);
+}
+
+function handleAddSubmit(event) {
+  event.preventDefault();
+
+  const englishInput = views.add.querySelector("#englishInput");
+  const chineseInput = views.add.querySelector("#chineseInput");
+  const english = englishInput.value.trim();
+  const chinese = chineseInput.value.trim();
+
+  if (!english || !chinese) {
+    showToast("英文和中文都要填写。");
+    return;
+  }
+
+  addReviewItem({ english, chinese });
+  englishInput.value = "";
+  chineseInput.value = "";
+  showToast("已收入英语金库，3 天后复习。");
+  refreshApp();
+}
+
+function handleFeedback(result) {
+  const entry = uiState.activeSessionEntry;
+  if (!entry) return;
+
+  recordReviewResult({
+    itemId: entry.id,
+    promptSide: entry.promptSide,
+    result
+  });
+
+  entry.status = "done";
+  entry.result = result;
+  saveTodaySession(uiState.session);
+  saveCompletedCheckInIfNeeded(getTodaySummary());
+  uiState.answerVisible = false;
+  showToast(getFeedbackMessage(result));
+  refreshApp();
+}
+
+function handleExport() {
+  const backup = exportBackup();
+  const blob = new Blob([JSON.stringify(backup, null, 2)], {
+    type: "application/json"
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `english-review-backup-${toDateOnly(new Date())}.json`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  showToast("JSON 备份已导出。");
+}
+
+function startVoiceInput(field, button) {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const status = views.add.querySelector("#voiceStatus");
+  const input = field === "english" ? views.add.querySelector("#englishInput") : views.add.querySelector("#chineseInput");
+
+  if (!SpeechRecognition) {
+    status.textContent = "当前浏览器不支持 App 内语音，请使用手机系统输入法语音。";
+    showToast("请使用系统输入法语音。");
+    return;
+  }
+
+  if (uiState.recognition) {
+    uiState.recognition.stop();
+    uiState.recognition = null;
+    return;
+  }
+
+  input.focus();
+
+  const recognition = new SpeechRecognition();
+  uiState.recognition = recognition;
+  recognition.lang = field === "english" ? "en-US" : "zh-CN";
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  button.classList.add("is-recording");
+  status.textContent = "正在听写，请现在开始说话...";
+
+  recognition.onresult = (event) => {
+    const text = event.results[0][0].transcript;
+    input.value = input.value.trim() ? `${input.value.trim()} ${text}` : text;
+    showToast("语音已写入。");
+  };
+
+  recognition.onerror = (event) => {
+    status.textContent = getVoiceErrorMessage(event.error);
+  };
+
+  recognition.onend = () => {
+    uiState.recognition = null;
+    button.classList.remove("is-recording");
+    if (status.textContent === "正在听写，请现在开始说话...") {
+      status.textContent = "没有收到语音。可以再点一次听写，或用系统输入法语音。";
+    }
+  };
+
+  try {
+    recognition.start();
+  } catch {
+    status.textContent = "语音启动失败，请使用系统输入法语音。";
+  }
+}
+
+function getVoiceErrorMessage(error) {
+  const messages = {
+    "not-allowed": "麦克风权限被拒绝。请在浏览器地址栏左侧打开麦克风权限。",
+    "service-not-allowed": "浏览器不允许当前页面使用语音服务，可以换 Chrome 或使用系统输入法语音。",
+    "no-speech": "没有检测到声音。点听写后要马上说话，或靠近麦克风再试。",
+    "audio-capture": "没有检测到麦克风。请检查电脑或浏览器麦克风权限。",
+    network: "浏览器语音服务网络异常。可以稍后再试，或使用系统输入法语音。",
+    aborted: "听写已停止。"
+  };
+
+  return messages[error] || `语音识别失败：${error || "未知原因"}。可以再试一次或用系统输入法语音。`;
+}
+
+function switchTab(tab) {
+  uiState.tab = tab;
+  setActiveTab(tab);
+}
+
+function setActiveTab(tab) {
+  Object.entries(views).forEach(([key, view]) => {
+    view.hidden = key !== tab;
+  });
+
+  document.querySelectorAll(".nav-button").forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.tab === tab);
+  });
+}
+
+function getTodaySummary() {
+  const session = uiState.session;
+  return {
+    plannedCount: session.length,
+    completedCount: session.filter((entry) => entry.status === "done").length,
+    forgotCount: session.filter((entry) => entry.result === "forgot").length,
+    unclearCount: session.filter((entry) => entry.result === "unclear").length,
+    familiarCount: session.filter((entry) => entry.result === "familiar").length,
+    completed: session.length > 0 && session.every((entry) => entry.status === "done")
+  };
+}
+
+function saveCompletedCheckInIfNeeded(summary) {
+  if (!summary.completed) return;
+  saveDailyCheckIn(summary);
+}
+
+function getCompletedCheckInCount() {
+  const today = getTodayCheckIn();
+  const state = exportBackup();
+  const completedDates = new Set(
+    state.dailyCheckIns.filter((entry) => entry.completed).map((entry) => entry.date)
+  );
+
+  if (today?.completed) completedDates.add(today.date);
+  return completedDates.size;
+}
+
+function getStageText(reviewCount) {
+  if (reviewCount === 0) return "第 3 天复习";
+  if (reviewCount === 1) return "第 7 天复习";
+  if (reviewCount === 2) return "第 15 天复习";
+  if (reviewCount === 3) return "第 30 天复习";
+  return "30 天循环";
+}
+
+function getFeedbackMessage(result) {
+  if (result === "forgot") return "忘了：1 天后再出现。";
+  if (result === "unclear") return "模糊：3 天后再出现。";
+  return "熟了：进入下一档。";
+}
+
+function showToast(message) {
+  const toast = document.querySelector("#toast");
+  toast.textContent = message;
+  toast.classList.add("is-visible");
+  window.clearTimeout(showToast.timer);
+  showToast.timer = window.setTimeout(() => {
+    toast.classList.remove("is-visible");
+  }, 2200);
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function registerServiceWorker() {
+  if (!("serviceWorker" in navigator)) return;
+
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("service-worker.js").catch(() => {
+      // 离线缓存失败不影响主功能，保持静默。
+    });
+  });
+}

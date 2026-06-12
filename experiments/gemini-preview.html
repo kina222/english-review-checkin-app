@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>ZenRepeat - 娜美的航海手账</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 移动端 PWA 全屏配置 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        parchment: '#fcf6e8',    // 复古羊皮纸
+                        mangaInk: '#111111',     // 漫画墨水
+                        luffyRed: '#ef4444',     // 铁拳制裁红
+                        zoroGreen: '#10b981',    // 雷霆剑气绿
+                        sanjiYellow: '#facc15',  // 娜美蜜柑发色金黄
+                        oceanBlue: '#0ea5e9',    // 伟大航路海蓝
+                        namiPink: '#f472b6'      // 优雅粉
+                    },
+                    borderWidth: {
+                        '3': '3px',
+                        '4': '4px',
+                    },
+                    boxShadow: {
+                        'manga': '5px 5px 0px 0px #111111',
+                        'manga-sm': '2.5px 2.5px 0px 0px #111111',
+                        'manga-lg': '8px 8px 0px 0px #111111',
+                        'manga-active': '0px 0px 0px 0px #111111'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #dfd5c6; /* 桌面底色：大航海海图背景色 */
+            color: #111111;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* 隐藏滚动条 */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* 经典漫画按压下沉动效 */
+        .manga-press {
+            transition: all 0.08s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        .manga-press:active {
+            transform: translate(3px, 3px);
+            box-shadow: 0px 0px 0px 0px #111111 !important;
+        }
+        /* 羊皮纸微弱斑驳感 */
+        .parchment-pattern {
+            background-image: radial-gradient(#dfd5c6 1px, transparent 0);
+            background-size: 24px 24px;
+        }
+    </style>
+</head>
+<body class="flex justify-center items-center min-h-screen p-0 sm:p-4">
+
+    <!-- 手机端黄金比例容器 -->
+    <div class="relative w-full max-w-[400px] h-screen sm:h-[820px] bg-parchment text-mangaInk flex flex-col justify-between overflow-hidden sm:border-4 sm:border-mangaInk sm:rounded-[40px] sm:shadow-[12px_12px_0px_0px_rgba(17,17,17,0.2)]">
+        
+        <!-- 顶部刘海孔装饰 (仅电脑端可见) -->
+        <div class="hidden sm:block absolute top-3 left-1/2 transform -translate-x-1/2 w-24 h-4 bg-mangaInk rounded-full z-50"></div>
+
+        <!-- 顶部状态栏：大航海娜美罗盘风格 -->
+        <header class="pt-8 px-5 pb-3 flex justify-between items-center border-b-3 border-mangaInk bg-sanjiYellow">
+            <div class="flex items-center gap-2">
+                <!-- 纯SVG 娜美专属眨眼橘发骷髅旗 -->
+                <svg class="w-9 h-9 filter drop-shadow-[2px_2px_0px_rgba(0,0,0,1)]" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="32" cy="32" r="28" fill="#111111" />
+                    <!-- 背景：风车线条 -->
+                    <path d="M16 16 L48 48 M48 16 L16 48" stroke="#fcf6e8" stroke-width="4" stroke-linecap="round" opacity="0.3"/>
+                    <!-- 骷髅底座 -->
+                    <circle cx="32" cy="31" r="11" fill="#ffffff" />
+                    <rect x="27" y="38" width="10" height="6" rx="2" fill="#ffffff"/>
+                    <!-- 娜美的招牌橘色卷发（左侧和右侧标志性大卷） -->
+                    <path d="M17 24 C17 14, 25 12, 32 15 C39 12, 47 14, 47 24 C47 28, 44 32, 44 34" stroke="#111111" stroke-width="2.5" fill="none"/>
+                    <circle cx="21" cy="23" r="5" fill="#f97316" stroke="#111111" stroke-width="2"/>
+                    <circle cx="43" cy="23" r="5" fill="#f97316" stroke="#111111" stroke-width="2"/>
+                    <path d="M19 28 C16 35, 23 39, 26 34" stroke="#111111" stroke-width="2" fill="#f97316"/>
+                    <path d="M45 28 C48 35, 41 39, 38 34" stroke="#111111" stroke-width="2" fill="#f97316"/>
+                    <!-- 眨眼左眼 (wink) -->
+                    <path d="M25 30 Q28 27 31 30" stroke="#111111" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+                    <!-- 闪亮大右眼 -->
+                    <ellipse cx="37" cy="30" rx="2.5" ry="3.5" fill="#111111"/>
+                    <circle cx="38" cy="29" r="1" fill="#ffffff"/>
+                    <!-- 嘴巴笑口常开 -->
+                    <path d="M29 36 Q32 39 35 36" stroke="#111111" stroke-width="2" stroke-linecap="round" fill="none"/>
+                    <!-- 娜美的金色大耳环 -->
+                    <circle cx="19" cy="31" r="2.5" stroke="#facc15" stroke-width="2" fill="none"/>
+                    <circle cx="45" cy="31" r="2.5" stroke="#facc15" stroke-width="2" fill="none"/>
+                </svg>
+                <div>
+                    <h1 class="text-base font-black tracking-tighter flex items-center gap-1">
+                        <span>ZenRepeat</span>
+                    </h1>
+                    <p class="text-[9px] text-mangaInk/85 font-black -mt-0.5">天候航海英语手账 · 娜美金库</p>
+                </div>
+            </div>
+            
+            <!-- 打卡新世界记录指针 (Log Pose) SVG -->
+            <div class="flex items-center gap-1.5 bg-white border-2 border-mangaInk px-2.5 py-1 rounded-xl shadow-manga-sm">
+                <!-- 记录指针玻璃球和摆针 -->
+                <svg class="w-4 h-4 text-mangaInk animate-pulse" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor"></circle>
+                    <circle cx="12" cy="12" r="3" fill="currentColor"></circle>
+                    <path d="M12 3v3M12 18v3M3 12h3M18 12h3" stroke-linecap="round"></path>
+                    <polygon points="12,12 15,8 12,10 9,8" fill="currentColor"></polygon>
+                </svg>
+                <span id="streak-count" class="text-xs font-black font-mono">0 天</span>
+            </div>
+        </header>
+
+        <!-- 页面核心内容区域 -->
+        <main class="flex-1 overflow-y-auto no-scrollbar px-4 py-4 flex flex-col justify-between parchment-pattern">
+            
+            <!-- VIEW 1: 天候对决 (Review Panel) -->
+            <section id="view-review" class="flex-1 flex flex-col justify-between space-y-4">
+                
+                <!-- 蜜柑航线与金币进度条 -->
+                <div class="flex justify-between items-center bg-white border-2 border-mangaInk px-3 py-2 rounded-xl shadow-manga-sm text-xs font-black relative overflow-hidden">
+                    <span class="flex items-center gap-1.5">
+                        <!-- 纯绘小蜜柑 🍊 -->
+                        <span class="text-sm">🍊</span>
+                        <span>娜美的蜜柑成长线</span>
+                    </span>
+                    <span id="session-progress" class="font-mono bg-sanjiYellow/20 border border-mangaInk px-2 py-0.5 rounded-md">0 / 0</span>
+                </div>
+
+                <!-- 本日复习清空 -->
+                <div id="review-empty-state" class="hidden bg-white border-3 border-mangaInk rounded-[24px] p-5 text-center space-y-4 my-auto shadow-manga">
+                    <div class="w-14 h-14 bg-zoroGreen border-2 border-mangaInk rounded-2xl flex items-center justify-center mx-auto shadow-manga-sm text-2xl">
+                        🍊
+                    </div>
+                    <div class="space-y-1">
+                        <h3 class="text-base font-black">今天也是大丰收！</h3>
+                        <p class="text-xs text-zinc-600 leading-relaxed">金库里已经堆满了金灿灿的贝里！娜美已经帮你把蜜柑红茶泡好了，今天的探索任务大获全胜。新词将在 3 天后自动进入对决。</p>
+                    </div>
+                    <div class="pt-2 space-y-2">
+                        <button onclick="switchTab('add')" class="manga-press w-full py-3 bg-sanjiYellow border-2 border-mangaInk rounded-xl text-xs font-black shadow-manga">
+                            写下新的冒险手账
+                        </button>
+                        <button onclick="injectDemoData()" id="demo-btn" class="manga-press w-full py-2.5 bg-white border-2 border-mangaInk rounded-xl text-[10px] text-zinc-500 font-bold shadow-manga-sm">
+                            直接注入 5 条特训数据
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 复习卡片：WANTED 悬赏单 -->
+                <div id="review-card-container" class="space-y-4 my-auto flex-1 flex flex-col justify-center">
+                    
+                    <div id="wanted-poster-card" class="bg-[#f2e7d3] border-3 border-mangaInk rounded-[24px] p-4 shadow-manga relative min-h-[250px] flex flex-col justify-between overflow-hidden">
+                        
+                        <!-- WANTED 娜美主题大框 -->
+                        <div class="text-center">
+                            <h2 class="text-2xl font-black tracking-widest text-white bg-mangaInk py-1 rounded-md uppercase border-b-2 border-mangaInk">WANTED</h2>
+                            <div class="flex justify-between items-center text-[9px] font-black mt-2 px-1 text-zinc-700">
+                                <span id="card-stage-info" class="font-mono">CLIMATE STAGE: 3 DAYS</span>
+                                <span id="card-prompt-lang">PROMPT: ENGLISH</span>
+                            </div>
+                        </div>
+
+                        <!-- 单词/句子展示区 -->
+                        <div class="my-auto py-4 text-center">
+                            <p id="prompt-content" class="text-base sm:text-lg font-black leading-relaxed text-mangaInk break-words"></p>
+                        </div>
+
+                        <!-- 遮罩/答案展示 -->
+                        <div id="answer-box" class="mt-2">
+                            <!-- 默认遮挡 -->
+                            <button id="btn-reveal" onclick="revealAnswer()" class="manga-press w-full py-3 bg-sanjiYellow border-2 border-mangaInk rounded-xl text-xs font-black shadow-manga flex items-center justify-center gap-1.5">
+                                <!-- 蜜柑叶子 SVG -->
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" stroke-linecap="round" stroke-linejoin="round"></path>
+                                </svg>
+                                翻开隐藏手账
+                            </button>
+                            <!-- 展示 -->
+                            <div id="answer-detail" class="hidden text-center py-2.5 bg-white border-2 border-dashed border-mangaInk rounded-xl p-3 shadow-manga-sm">
+                                <p id="answer-content" class="text-xs sm:text-sm font-bold text-mangaInk break-words leading-relaxed"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 娜美决策金三角 -->
+                    <div id="feedback-group" class="hidden grid grid-cols-3 gap-2.5 pt-1">
+                        <!-- 忘了 ➡️ 路飞挨揍红 -->
+                        <button onclick="recordFeedback('forgot')" class="manga-press py-3 bg-luffyRed border-2 border-mangaInk rounded-xl text-xs font-black shadow-manga text-white flex flex-col items-center gap-1">
+                            <span class="text-sm">👊 忘了</span>
+                            <span class="text-[9px] opacity-90">娜美铁拳</span>
+                        </button>
+                        <!-- 模糊 ➡️ 蜜柑海市蜃楼金黄 -->
+                        <button onclick="recordFeedback('blur')" class="manga-press py-3 bg-sanjiYellow border-2 border-mangaInk rounded-xl text-xs font-black shadow-manga text-mangaInk flex flex-col items-center gap-1">
+                            <span class="text-sm">🌫️ 模糊</span>
+                            <span class="text-[9px] opacity-90">海市蜃楼</span>
+                        </button>
+                        <!-- 熟了 ➡️ 索隆雷霆绿 -->
+                        <button onclick="recordFeedback('fam')" class="manga-press py-3 bg-zoroGreen border-2 border-mangaInk rounded-xl text-xs font-black shadow-manga text-white flex flex-col items-center gap-1">
+                            <span class="text-sm">⚡ 熟了</span>
+                            <span class="text-[9px] opacity-90">雷霆天候</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 航线汇报 -->
+                <div id="summary-section" class="hidden bg-white border-2 border-mangaInk rounded-xl p-3 shadow-manga-sm space-y-1.5 text-[11px] font-bold">
+                    <p class="text-zinc-500 uppercase tracking-wider text-[9px] font-black">今日账本汇总</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="bg-parchment border border-mangaInk p-2 rounded-lg">
+                            <p class="text-[9px] text-zinc-500">已处理悬赏数</p>
+                            <p class="text-xs font-black" id="stat-total-reviews">0 条</p>
+                        </div>
+                        <div class="bg-parchment border border-mangaInk p-2 rounded-lg">
+                            <p class="text-[9px] text-zinc-500">日志保存状态</p>
+                            <p class="text-xs font-black text-emerald-600" id="stat-checkin-time">进行中...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW 2: 金库账本 (Add Panel) -->
+            <section id="view-add" class="space-y-4 flex-1 flex flex-col justify-start hidden">
+                <h2 class="text-xs font-black tracking-wider text-mangaInk uppercase bg-white border border-mangaInk px-2.5 py-1 rounded-md inline-block">录入新的贝里金币</h2>
+                
+                <div class="space-y-3">
+                    <!-- 英文输入 -->
+                    <div class="space-y-1 relative">
+                        <label class="text-xs font-black text-zinc-700 flex justify-between items-center px-1">
+                            <span>英文单词 / 契约长句</span>
+                            <span class="text-[9px] text-zinc-500 font-normal">支持系统语音</span>
+                        </label>
+                        <div class="flex gap-2">
+                            <textarea id="input-en" rows="3" placeholder="输入英文词句..." class="w-full bg-white border-2 border-mangaInk rounded-xl px-3 py-2.5 text-xs font-bold focus:outline-none focus:bg-zinc-50 transition-colors resize-none leading-relaxed shadow-manga-sm"></textarea>
+                            <!-- 魔法天候棒语音 -->
+                            <button onclick="startVoiceInput('en')" id="btn-voice-en" title="天候听写" class="manga-press px-3.5 bg-white border-2 border-mangaInk rounded-xl text-mangaInk shadow-manga-sm flex flex-col items-center justify-center self-stretch">
+                                <span class="text-lg">⚡</span>
+                                <span class="text-[8px] font-black mt-1">听写</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 中文输入 -->
+                    <div class="space-y-1 relative">
+                        <label class="text-xs font-black text-zinc-700 flex justify-between items-center px-1">
+                            <span>中文翻译 / 财富密码</span>
+                            <span class="text-[9px] text-zinc-500 font-normal">支持天候听写</span>
+                        </label>
+                        <div class="flex gap-2">
+                            <textarea id="input-cn" rows="3" placeholder="输入对应的中文释义..." class="w-full bg-white border-2 border-mangaInk rounded-xl px-3 py-2.5 text-xs font-bold focus:outline-none focus:bg-zinc-50 transition-colors resize-none leading-relaxed shadow-manga-sm"></textarea>
+                            <button onclick="startVoiceInput('cn')" id="btn-voice-cn" title="天候听写" class="manga-press px-3.5 bg-white border-2 border-mangaInk rounded-xl text-mangaInk shadow-manga-sm flex flex-col items-center justify-center self-stretch">
+                                <span class="text-lg">⚡</span>
+                                <span class="text-[8px] font-black mt-1">听写</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 语音状态 -->
+                    <p id="voice-status" class="text-[10px] font-black text-center min-h-[14px] text-zinc-500"></p>
+
+                    <button onclick="saveNewItem()" class="manga-press w-full py-3.5 bg-zoroGreen border-2 border-mangaInk font-black rounded-xl text-xs shadow-manga flex items-center justify-center gap-1.5 text-white">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke-linecap="round" stroke-linejoin="round"></path>
+                        </svg>
+                        收入娜美的铁金库
+                    </button>
+                </div>
+            </section>
+
+            <!-- VIEW 3: 橘子航线 (Library Panel) -->
+            <section id="view-words" class="space-y-3 flex-1 flex flex-col hidden">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xs font-black tracking-wider text-mangaInk uppercase bg-white border border-mangaInk px-2.5 py-1 rounded-md inline-block">全量航线金库 (<span id="total-words-count" class="font-mono">0</span>)</h2>
+                    
+                    <!-- 检索框 -->
+                    <div class="relative w-36">
+                        <input type="text" id="library-search" oninput="renderLibrary()" placeholder="检索财富密码..." class="w-full bg-white border-2 border-mangaInk rounded-lg pl-8 pr-2.5 py-1 text-xs font-bold focus:outline-none placeholder-zinc-400 shadow-manga-sm">
+                        <svg class="w-3.5 h-3.5 text-zinc-500 absolute left-2.5 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                            <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- 词汇列表 -->
+                <div id="library-list" class="flex-1 space-y-3 overflow-y-auto no-scrollbar pr-0.5 max-h-[50vh]">
+                    <!-- 动态注入 -->
+                </div>
+            </section>
+
+            <!-- VIEW 4: 贝里管家 (Settings Panel) -->
+            <section id="view-settings" class="space-y-4 flex-1 flex flex-col justify-start hidden">
+                <h2 class="text-xs font-black tracking-wider text-mangaInk uppercase bg-white border border-mangaInk px-2.5 py-1 rounded-md inline-block">贝里金库账务与清算</h2>
+
+                <div class="bg-white border-2 border-mangaInk rounded-2xl p-4 shadow-manga-sm space-y-3">
+                    <h3 class="text-xs font-black flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-sanjiYellow" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                            <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" stroke-linecap="round" stroke-linejoin="round"></path>
+                        </svg>
+                        物理备份物理导出 (JSON)
+                    </h3>
+                    <p class="text-[10px] text-zinc-500 leading-relaxed font-bold">
+                        冒险者的手账全部保存在本地。请定期导出，万一丢失数据可比损失一百万贝里更让人心痛。
+                    </p>
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <button onclick="exportData()" class="manga-press py-2.5 bg-white border-2 border-mangaInk text-xs font-black rounded-xl shadow-manga-sm flex items-center justify-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                                <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" stroke-linecap="round" stroke-linejoin="round"></path>
+                            </svg>
+                            导出账本
+                        </button>
+                        <button onclick="triggerImport()" class="manga-press py-2.5 bg-white border-2 border-mangaInk text-xs font-black rounded-xl shadow-manga-sm flex items-center justify-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                                <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l4-4m0 0l4 4m-4-4v12" stroke-linecap="round" stroke-linejoin="round"></path>
+                            </svg>
+                            加载手账
+                        </button>
+                        <input type="file" id="import-file-input" onchange="importData(event)" class="hidden" accept=".json">
+                    </div>
+                </div>
+
+                <!-- 危险区域 -->
+                <div class="bg-luffyRed/10 border-2 border-mangaInk rounded-2xl p-4 shadow-manga-sm space-y-2.5">
+                    <h3 class="text-xs font-black text-red-700 flex items-center gap-1.5">
+                        ☠️ 沉没金库 (格式化)
+                    </h3>
+                    <p class="text-[9px] text-zinc-600 font-bold leading-relaxed">这会让所有的账本和积累的贝里化为泡影，绝对不可撤回！</p>
+                    <button onclick="confirmClearAll()" class="manga-press w-full py-2 bg-red-100 border-2 border-mangaInk text-red-700 text-xs font-black rounded-xl shadow-manga-sm">
+                        彻底抹除航海账本
+                    </button>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- 纯手机端底部导航 -->
+        <footer class="pb-10 pt-3 px-3 border-t-3 border-mangaInk bg-white z-30">
+            <div class="flex justify-between items-center gap-1">
+                <button onclick="switchTab('review')" id="nav-review" class="flex-1 flex flex-col items-center gap-1 text-mangaInk transition-transform">
+                    <div class="p-1.5 rounded-xl border-2 border-transparent transition-all" id="icon-container-review">
+                        <!-- 内建 SVG 魔法天候棒碰撞 -->
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                            <path d="M14.5 17.5L3 6V3h3l11.5 11.5M13 19l8.5-8.5M21 3v3l-8.5 8.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                        </svg>
+                    </div>
+                    <span class="text-[9px] font-black">天候对决</span>
+                </button>
+                <button onclick="switchTab('add')" id="nav-add" class="flex-1 flex flex-col items-center gap-1 text-zinc-500 transition-transform">
+                    <div class="p-1.5 rounded-xl border-2 border-transparent transition-all" id="icon-container-add">
+                        <!-- 内建 SVG 财富金笔 -->
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                            <path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" stroke-linecap="round" stroke-linejoin="round"></path>
+                        </svg>
+                    </div>
+                    <span class="text-[9px] font-black">金库账本</span>
+                </button>
+                <button onclick="switchTab('words')" id="nav-words" class="flex-1 flex flex-col items-center gap-1 text-zinc-500 transition-transform">
+                    <div class="p-1.5 rounded-xl border-2 border-transparent transition-all" id="icon-container-words">
+                        <!-- 内建 SVG 地图 -->
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                            <path d="M9 20L3 17V4l6 3 6-3 6 3v13l-6-3-6 3zM9 7v13M15 4v13" stroke-linecap="round" stroke-linejoin="round"></path>
+                        </svg>
+                    </div>
+                    <span class="text-[9px] font-black">橘子航线</span>
+                </button>
+                <button onclick="switchTab('settings')" id="nav-settings" class="flex-1 flex flex-col items-center gap-1 text-zinc-500 transition-transform">
+                    <div class="p-1.5 rounded-xl border-2 border-transparent transition-all" id="icon-container-settings">
+                        <!-- 内建 贝里大符号 ฿ -->
+                        <span class="text-base font-black leading-none block h-5 w-5 text-center">฿</span>
+                    </div>
+                    <span class="text-[9px] font-black">贝里管家</span>
+                </button>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- 自定义航海风轻飘 Toast 提示 -->
+    <div id="toast" class="fixed top-6 left-1/2 transform -translate-x-1/2 bg-mangaInk border-2 border-white text-white text-xs px-4 py-2.5 rounded-2xl shadow-manga opacity-0 transition-opacity duration-300 pointer-events-none z-50 flex items-center gap-1.5 font-bold">
+        <span id="toast-text">成功开启冒险</span>
+    </div>
+
+    <!-- 全局海贼漫画弹框 -->
+    <div id="custom-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-200 p-6">
+        <div class="bg-white border-3 border-mangaInk rounded-[24px] p-5 max-w-sm w-full space-y-4 shadow-manga">
+            <div class="space-y-1">
+                <h4 id="modal-title" class="text-sm font-black">确定要清账吗？</h4>
+                <p id="modal-desc" class="text-xs text-zinc-500 leading-relaxed font-bold">丢弃的数据无法追回，就像落入无风带一样。</p>
+            </div>
+            <div class="flex gap-2 pt-1">
+                <button id="modal-btn-cancel" class="manga-press flex-1 py-2.5 bg-zinc-100 border-2 border-mangaInk rounded-xl text-xs font-black shadow-manga-sm">留下账目</button>
+                <button id="modal-btn-confirm" class="manga-press flex-1 py-2.5 bg-luffyRed border-2 border-mangaInk rounded-xl text-xs font-black shadow-manga-sm text-white">丢弃</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 逻辑控制 -->
+    <script>
+        const REVIEW_INTERVALS = [3, 7, 15, 30];
+
+        let state = {
+            items: [],
+            checkins: [],
+            todaySession: [],
+            currentWordIdx: -1,
+            isAnswerRevealed: false
+        };
+
+        const demoWords = [
+            { en: "The silver lining", cn: "黑暗尽头的一线曙光 / 逆境中的积极面", stage: 0 },
+            { en: "In the long run", cn: "从长远来看 / 终局而言", stage: 0 },
+            { en: "Take it with a grain of salt", cn: "半信半疑 / 有所保留地看待", stage: 0 },
+            { en: "Cutting corners", cn: "抄近道 / 偷工减料 / 走捷径", stage: 0 },
+            { en: "Hit the nail on the head", cn: "一针见血 / 说得恰到好处", stage: 0 }
+        ];
+
+        window.onload = function() {
+            loadStateFromStorage();
+            initSessionIfNeeded();
+            refreshStreakUI();
+            switchTab('review');
+        };
+
+        // --- 本地存储沙盒读写 ---
+        function loadStateFromStorage() {
+            try {
+                const storedItems = localStorage.getItem('zr_items');
+                const storedCheckins = localStorage.getItem('zr_checkins');
+                state.items = storedItems ? JSON.parse(storedItems) : [];
+                state.checkins = storedCheckins ? JSON.parse(storedCheckins) : [];
+            } catch (e) {
+                console.log("Storage load error:", e);
+            }
+        }
+
+        function saveStateToStorage() {
+            try {
+                localStorage.setItem('zr_items', JSON.stringify(state.items));
+                localStorage.setItem('zr_checkins', JSON.stringify(state.checkins));
+            } catch (e) {
+                console.log("Storage save error:", e);
+            }
+        }
+
+        // --- 航行复习流算法计算 ---
+        function initSessionIfNeeded() {
+            const todayStr = getTodayDateString();
+            const storedSessionDate = localStorage.getItem('zr_session_date');
+            const storedSession = localStorage.getItem('zr_session_state');
+
+            // 恢复今天的对决
+            if (storedSessionDate === todayStr && storedSession) {
+                try {
+                    state.todaySession = JSON.parse(storedSession);
+                    startReviewWorkflow();
+                    return;
+                } catch (err) {}
+            }
+
+            // 新增今天的对决提取
+            const now = Date.now();
+            const dueItems = state.items.filter(item => {
+                const nextReviewStr = getFormattedDateString(new Date(item.nextReviewAt));
+                return nextReviewStr <= todayStr;
+            });
+
+            // 每天上限最多处理 15 条
+            const sessionSize = Math.min(dueItems.length, 15);
+            const chosenItems = dueItems.slice(0, sessionSize);
+
+            state.todaySession = chosenItems.map(item => ({
+                id: item.id,
+                promptSide: Math.random() > 0.5 ? 'en' : 'cn',
+                status: 'pending'
+            }));
+
+            localStorage.setItem('zr_session_date', todayStr);
+            saveSessionState();
+
+            startReviewWorkflow();
+        }
+
+        function startReviewWorkflow() {
+            const pendingIndex = state.todaySession.findIndex(el => el.status === 'pending');
+            
+            const emptyState = document.getElementById('review-empty-state');
+            const cardContainer = document.getElementById('review-card-container');
+            const sessionProgress = document.getElementById('session-progress');
+            const summarySec = document.getElementById('summary-section');
+
+            // 隐藏或展示注入按钮
+            const demoBtn = document.getElementById('demo-btn');
+            if (state.items.length > 0) {
+                if (demoBtn) demoBtn.classList.add('hidden');
+            } else {
+                if (demoBtn) demoBtn.classList.remove('hidden');
+            }
+
+            if (pendingIndex === -1) {
+                emptyState.classList.remove('hidden');
+                cardContainer.classList.add('hidden');
+                sessionProgress.innerText = `大丰收 🍊`;
+
+                const todayStr = getTodayDateString();
+                if (state.todaySession.length > 0 && !state.checkins.includes(todayStr)) {
+                    state.checkins.push(todayStr);
+                    saveStateToStorage();
+                    refreshStreakUI();
+                    showToast("航海打卡成功！获得巨额贝里");
+                }
+                
+                renderDailySummary(true);
+            } else {
+                state.currentWordIdx = pendingIndex;
+                emptyState.classList.add('hidden');
+                cardContainer.classList.remove('hidden');
+
+                const total = state.todaySession.length;
+                const done = state.todaySession.filter(el => el.status === 'resolved').length;
+                sessionProgress.innerText = `${done} / ${total}`;
+
+                renderCurrentCard();
+                renderDailySummary(false);
+            }
+        }
+
+        function renderCurrentCard() {
+            const sessionItem = state.todaySession[state.currentWordIdx];
+            const originalItem = state.items.find(el => el.id === sessionItem.id);
+
+            if (!originalItem) {
+                state.todaySession.splice(state.currentWordIdx, 1);
+                saveSessionState();
+                startReviewWorkflow();
+                return;
+            }
+
+            state.isAnswerRevealed = false;
+            document.getElementById('btn-reveal').classList.remove('hidden');
+            document.getElementById('answer-detail').classList.add('hidden');
+            document.getElementById('feedback-group').classList.add('hidden');
+
+            const promptContentEl = document.getElementById('prompt-content');
+            const answerContentEl = document.getElementById('answer-content');
+            const promptLangEl = document.getElementById('card-prompt-lang');
+            const stageInfoEl = document.getElementById('card-stage-info');
+
+            const currentStage = originalItem.stage || 0;
+            const daysInterval = currentStage < REVIEW_INTERVALS.length ? REVIEW_INTERVALS[currentStage] : 30;
+            stageInfoEl.innerText = `CLIMATE STAGE: ${daysInterval} DAYS`;
+
+            if (sessionItem.promptSide === 'en') {
+                promptContentEl.innerText = originalItem.en;
+                answerContentEl.innerText = originalItem.cn;
+                promptLangEl.innerText = "PROMPT: ENGLISH";
+            } else {
+                promptContentEl.innerText = originalItem.cn;
+                answerContentEl.innerText = originalItem.en;
+                promptLangEl.innerText = "PROMPT: CHINESE";
+            }
+        }
+
+        function revealAnswer() {
+            state.isAnswerRevealed = true;
+            document.getElementById('btn-reveal').classList.add('hidden');
+            document.getElementById('answer-detail').classList.remove('hidden');
+            document.getElementById('feedback-group').classList.remove('hidden');
+        }
+
+        function recordFeedback(level) {
+            const sessionItem = state.todaySession[state.currentWordIdx];
+            const originalItem = state.items.find(el => el.id === sessionItem.id);
+
+            if (!originalItem) return;
+
+            const now = Date.now();
+            const originalStage = originalItem.stage || 0;
+
+            if (level === 'fam') {
+                const nextStage = originalStage + 1;
+                const nextDays = nextStage < REVIEW_INTERVALS.length ? REVIEW_INTERVALS[nextStage] : 30;
+                
+                originalItem.stage = nextStage;
+                originalItem.nextReviewAt = now + (nextDays * 24 * 60 * 60 * 1000);
+                sessionItem.status = 'resolved';
+                showToast("天候精准！成功晋升");
+            } 
+            else if (level === 'blur') {
+                originalItem.nextReviewAt = now + (1 * 24 * 60 * 60 * 1000);
+                sessionItem.status = 'resolved';
+                showToast("海市蜃楼！明天重回轨道");
+            } 
+            else if (level === 'forgot') {
+                originalItem.stage = 0;
+                originalItem.nextReviewAt = now;
+
+                state.todaySession.splice(state.currentWordIdx, 1);
+                sessionItem.status = 'pending';
+                sessionItem.promptSide = Math.random() > 0.5 ? 'en' : 'cn';
+                state.todaySession.push(sessionItem);
+                showToast("娜美铁拳制裁！放回队尾重新记忆");
+            }
+
+            saveStateToStorage();
+            saveSessionState();
+            startReviewWorkflow();
+        }
+
+        // --- 保存复习临时状态 ---
+        function saveSessionState() {
+            try {
+                localStorage.setItem('zr_session_state', JSON.stringify(state.todaySession));
+            } catch (err) {}
+        }
+
+        function renderDailySummary(isFinished) {
+            const summarySec = document.getElementById('summary-section');
+            const totalStat = document.getElementById('stat-total-reviews');
+            const checkinTime = document.getElementById('stat-checkin-time');
+
+            if (state.todaySession.length === 0) {
+                if (summarySec) summarySec.classList.add('hidden');
+                return;
+            }
+
+            if (summarySec) summarySec.classList.remove('hidden');
+            if (totalStat) totalStat.innerText = `${state.todaySession.length} 条`;
+
+            const todayStr = getTodayDateString();
+            if (checkinTime) {
+                if (state.checkins.includes(todayStr)) {
+                    checkinTime.innerText = "账本核对达成 ✓";
+                    checkinTime.className = "text-xs font-black text-emerald-600 mt-1";
+                } else {
+                    checkinTime.innerText = "账目对决中...";
+                    checkinTime.className = "text-xs font-black text-amber-600 mt-1";
+                }
+            }
+        }
+
+        // --- 写入新词 ---
+        function saveNewItem() {
+            const enVal = document.getElementById('input-en').value.trim();
+            const cnVal = document.getElementById('input-cn').value.trim();
+
+            if (!enVal || !cnVal) {
+                showToast("账本必须手写中英文 缺一不可");
+                return;
+            }
+
+            const now = Date.now();
+            const newItem = {
+                id: 'item_' + now + '_' + Math.random().toString(36).substr(2, 9),
+                en: enVal,
+                cn: cnVal,
+                createdAt: now,
+                stage: 0,
+                nextReviewAt: now + (3 * 24 * 60 * 60 * 1000)
+            };
+
+            state.items.unshift(newItem);
+            saveStateToStorage();
+
+            document.getElementById('input-en').value = '';
+            document.getElementById('input-cn').value = '';
+
+            showToast("成功装进娜美储钱罐！3天后见");
+            initSessionIfNeeded();
+        }
+
+        // --- 测试数据一键注入 ---
+        function injectDemoData() {
+            const now = Date.now();
+            demoWords.forEach((word, idx) => {
+                state.items.push({
+                    id: 'demo_' + idx + '_' + now,
+                    en: word.en,
+                    cn: word.cn,
+                    createdAt: now,
+                    stage: 0,
+                    nextReviewAt: now
+                });
+            });
+            saveStateToStorage();
+            initSessionIfNeeded();
+            showToast("5条冒险手账已完美加载");
+        }
+
+        // --- 橘子航线全量列表 ---
+        function renderLibrary() {
+            const container = document.getElementById('library-list');
+            const searchVal = document.getElementById('library-search').value.trim().toLowerCase();
+            container.innerHTML = '';
+
+            const filtered = state.items.filter(item => 
+                item.en.toLowerCase().includes(searchVal) || 
+                item.cn.toLowerCase().includes(searchVal)
+            );
+
+            document.getElementById('total-words-count').innerText = state.items.length;
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<p class="text-xs text-zinc-400 text-center py-8 font-bold">海图手账上还没有任何记录</p>`;
+                return;
+            }
+
+            filtered.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "bg-white border-2 border-mangaInk rounded-2xl p-4 flex justify-between items-start gap-4 shadow-manga-sm transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none";
+                
+                const nextReviewDate = new Date(item.nextReviewAt);
+                const nextReviewFormatted = getFormattedDateString(nextReviewDate);
+                
+                card.innerHTML = `
+                    <div class="flex-1 space-y-1 min-w-0">
+                        <p class="text-xs font-black text-mangaInk break-words leading-relaxed">${escapeHTML(item.en)}</p>
+                        <p class="text-[11px] font-bold text-zinc-500 break-words leading-relaxed">${escapeHTML(item.cn)}</p>
+                        <div class="flex items-center gap-2 text-[9px] text-zinc-400 font-mono font-bold">
+                            <span class="bg-zinc-100 border border-mangaInk px-1.5 py-0.5 rounded text-zinc-600">阶段: ${item.stage}</span>
+                            <span>下次对决: ${nextReviewFormatted}</span>
+                        </div>
+                    </div>
+                    <button onclick="handleDeleteWithConfirm('${item.id}')" class="text-zinc-400 hover:text-red-500 p-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                            <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round"></path>
+                        </svg>
+                    </button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function handleDeleteWithConfirm(id) {
+            showCustomModal(
+                "确定要撕掉本页海账吗？",
+                "撕掉账单后对应的复习历史就归零了哦。",
+                function() {
+                    state.items = state.items.filter(el => el.id !== id);
+                    state.todaySession = state.todaySession.filter(el => el.id !== id);
+                    
+                    saveStateToStorage();
+                    saveSessionState();
+                    renderLibrary();
+                    startReviewWorkflow();
+                    showToast("已销毁账目");
+                }
+            );
+        }
+
+        // --- 天候棒语音输入功能 ---
+        let recognition = null;
+        function startVoiceInput(fieldId) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            
+            if (!SpeechRecognition) {
+                showToast("当前设备不支持 建议使用系统输入法语音");
+                return;
+            }
+
+            const statusEl = document.getElementById('voice-status');
+            const targetBtn = fieldId === 'en' ? document.getElementById('btn-voice-en') : document.getElementById('btn-voice-cn');
+
+            if (recognition) {
+                recognition.stop();
+                recognition = null;
+                setMicRecordingUI(false, targetBtn);
+                statusEl.innerText = "";
+                return;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.lang = fieldId === 'en' ? 'en-US' : 'zh-CN';
+            recognition.interimResults = false;
+
+            statusEl.innerText = "雷云电波正在同步中...";
+            statusEl.className = "text-[9px] font-black text-center text-emerald-600 animate-pulse";
+            setMicRecordingUI(true, targetBtn);
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                const inputEl = document.getElementById(`input-${fieldId}`);
+                
+                if (inputEl.value.trim() !== "") {
+                    inputEl.value = inputEl.value.trim() + " " + transcript;
+                } else {
+                    inputEl.value = transcript;
+                }
+                showToast("同步成功");
+            };
+
+            recognition.onerror = function() {
+                statusEl.innerText = "信号有雾 娜美没听清楚";
+                statusEl.className = "text-[9px] font-black text-center text-red-500";
+            };
+
+            recognition.onend = function() {
+                setMicRecordingUI(false, targetBtn);
+                if (statusEl.innerText.startsWith("雷云")) {
+                    statusEl.innerText = "";
+                }
+                recognition = null;
+            };
+
+            try {
+                recognition.start();
+            } catch (e) {
+                showToast("语音开启失败");
+            }
+        }
+
+        function setMicRecordingUI(isActive, btnEl) {
+            if (isActive) {
+                btnEl.className = "px-3.5 bg-luffyRed border-2 border-mangaInk rounded-xl text-white transition-colors flex flex-col items-center justify-center self-stretch animate-pulse";
+            } else {
+                btnEl.className = "manga-press px-3.5 bg-white border-2 border-mangaInk rounded-xl text-mangaInk shadow-manga-sm flex flex-col items-center justify-center self-stretch";
+            }
+        }
+
+        // --- 账本导入导出 ---
+        function exportData() {
+            if (state.items.length === 0) {
+                showToast("空白账本 无需备份");
+                return;
+            }
+            const dataStr = JSON.stringify({
+                items: state.items,
+                checkins: state.checkins
+            }, null, 2);
+            
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Nami_Ledger_${getTodayDateString()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast("账本已经稳妥保存本地");
+        }
+
+        function triggerImport() {
+            document.getElementById('import-file-input').click();
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (parsed.items && Array.isArray(parsed.items)) {
+                        state.items = parsed.items;
+                        state.checkins = parsed.checkins || [];
+                        saveStateToStorage();
+                        
+                        localStorage.removeItem('zr_session_date');
+                        localStorage.removeItem('zr_session_state');
+                        initSessionIfNeeded();
+
+                        refreshStreakUI();
+                        renderLibrary();
+                        showToast("金库数据导入成功");
+                    } else {
+                        showToast("导入账目结构解析失败");
+                    }
+                } catch (err) {
+                    showToast("无效的JSON备份文件");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function confirmClearAll() {
+            showCustomModal(
+                "确定要清空全部冒险资产吗？",
+                "这将摧毁所有的词条和打卡，娜美绝对会超级心痛！",
+                function() {
+                    localStorage.clear();
+                    state.items = [];
+                    state.checkins = [];
+                    state.todaySession = [];
+                    state.currentWordIdx = -1;
+                    
+                    saveStateToStorage();
+                    refreshStreakUI();
+                    renderLibrary();
+                    initSessionIfNeeded();
+                    showToast("金库已经清零");
+                }
+            );
+        }
+
+        // --- 自定义弹窗控制 ---
+        let modalOnConfirmCallback = null;
+        function showCustomModal(title, desc, onConfirm) {
+            const modal = document.getElementById('custom-modal');
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-desc').innerText = desc;
+            
+            modalOnConfirmCallback = onConfirm;
+
+            modal.classList.remove('pointer-events-none', 'opacity-0');
+            modal.classList.add('opacity-100');
+        }
+
+        function hideCustomModal() {
+            const modal = document.getElementById('custom-modal');
+            modal.classList.remove('opacity-100');
+            modal.classList.add('pointer-events-none', 'opacity-0');
+            modalOnConfirmCallback = null;
+        }
+
+        document.getElementById('modal-btn-cancel').onclick = hideCustomModal;
+        document.getElementById('modal-btn-confirm').onclick = function() {
+            if (modalOnConfirmCallback) {
+                modalOnConfirmCallback();
+            }
+            hideCustomModal();
+        };
+
+        // --- 单页卡路由 ---
+        function switchTab(tabId) {
+            const tabs = ['review', 'add', 'words', 'settings'];
+            
+            tabs.forEach(t => {
+                const view = document.getElementById(`view-${t}`);
+                const nav = document.getElementById(`nav-${t}`);
+                const iconContainer = document.getElementById(`icon-container-${t}`);
+                
+                if (view && nav) {
+                    if (t === tabId) {
+                        view.classList.remove('hidden');
+                        nav.classList.add('text-mangaInk');
+                        nav.classList.remove('text-zinc-500');
+                        if (iconContainer) {
+                            iconContainer.className = "p-1.5 rounded-xl border-2 border-mangaInk bg-sanjiYellow shadow-manga-sm transition-all";
+                        }
+                    } else {
+                        view.classList.add('hidden');
+                        nav.classList.remove('text-mangaInk');
+                        nav.classList.add('text-zinc-500');
+                        if (iconContainer) {
+                            iconContainer.className = "p-1.5 rounded-xl border-2 border-transparent transition-all";
+                        }
+                    }
+                }
+            });
+
+            if (tabId === 'words') {
+                renderLibrary();
+            }
+        }
+
+        function refreshStreakUI() {
+            const days = state.checkins.length;
+            const streakCountEl = document.getElementById('streak-count');
+            if (streakCountEl) streakCountEl.innerText = `${days} 天`;
+        }
+
+        // --- 辅助工具 ---
+        function getTodayDateString() {
+            return getFormattedDateString(new Date());
+        }
+
+        function getFormattedDateString(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function escapeHTML(str) {
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function showToast(text) {
+            const toast = document.getElementById('toast');
+            const toastText = document.getElementById('toast-text');
+            if (toast && toastText) {
+                toastText.innerText = text;
+                toast.classList.remove('opacity-0');
+                toast.classList.add('opacity-100');
+                setTimeout(() => {
+                    toast.classList.remove('opacity-100');
+                    toast.classList.add('opacity-0');
+                }, 2200);
+            }
+        }
+    </script>
+</body>
+</html>
