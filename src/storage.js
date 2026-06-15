@@ -1,3 +1,4 @@
+// Do not change this key without a migration: user review data lives here.
 const STORAGE_KEY = "english-review-checkin:v1";
 const SESSION_KEY = "english-review-checkin:today-session:v1";
 const SESSION_DATE_KEY = "english-review-checkin:today-session-date:v1";

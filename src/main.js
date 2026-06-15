@@ -470,9 +470,10 @@ function startVoiceInput(field, button) {
   recognition.maxAlternatives = 1;
 
   button.classList.add("is-recording");
-  status.textContent = "正在听写，请现在开始说话。识别到的文字会先显示在这里。";
+  status.textContent = "正在听写，请现在开始说话。";
   const originalText = input.value.trim();
   let committedText = "";
+  let hasVoiceText = false;
 
   recognition.onresult = (event) => {
     let interimText = "";
@@ -486,23 +487,27 @@ function startVoiceInput(field, button) {
 
       if (event.results[index].isFinal) {
         committedText = appendVoiceText(committedText, text, field);
+        hasVoiceText = true;
       } else {
         interimText = appendVoiceText(interimText, text, field);
+        hasVoiceText = true;
       }
     }
 
-    if (interimText) {
-      status.textContent = `正在听写：${interimText}`;
+    const previewText = appendVoiceText(committedText, interimText, field);
+
+    if (previewText) {
+      input.value = appendVoiceText(originalText, previewText, field);
+      status.textContent = interimText ? "正在听写，文字会先临时显示在输入框。" : "语音已写入。";
     }
 
     if (committedText) {
       input.value = appendVoiceText(originalText, committedText, field);
-      status.textContent = "语音已写入。";
-      showToast("语音已写入。");
     }
   };
 
   recognition.onerror = (event) => {
+    input.value = originalText;
     status.textContent = getVoiceErrorMessage(event.error);
   };
 
@@ -510,7 +515,13 @@ function startVoiceInput(field, button) {
     uiState.recognition = null;
     button.classList.remove("is-recording");
     if (status.textContent.startsWith("正在听写")) {
+      input.value = originalText;
       status.textContent = "没有收到语音。可以再点一次听写，或用系统输入法语音。";
+      return;
+    }
+
+    if (hasVoiceText) {
+      showToast("语音已写入。");
     }
   };
 
