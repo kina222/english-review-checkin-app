@@ -30,6 +30,7 @@
 - 新增 `docs/media/pwa-vs-native-demo.html`，用动画方式解释本地开发、在线 PWA 和原生封装的区别。
 - 新增 PWA 基础配置：`manifest.webmanifest`、`service-worker.js`、`apple-touch-icon` 和 `.nojekyll`。
 - 将正式版资源路径改为相对路径，兼容 GitHub Pages 仓库子路径部署。
+- 将线上部署仓库切换为 `kina222/english-review-checkin-app`，并确认 GitHub Pages 地址可公开访问。
 
 ## 2026-06-06
 

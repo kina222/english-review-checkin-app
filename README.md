@@ -167,7 +167,7 @@ npm run dev
 
 部署目标：
 
-- GitHub 仓库：`kina222/english-review-checkin-`
+- GitHub 仓库：`kina222/english-review-checkin-app`
 - 部署方式：GitHub Pages 或其他静态网站服务
 
 上线后，手机打开线上网址，再添加到主屏幕。这样电脑关机、换 Wi-Fi、使用手机流量时也能打开。
