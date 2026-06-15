@@ -433,6 +433,18 @@ textarea:focus {
   overflow-wrap: anywhere;
 }
 
+.library-edit-form {
+  display: grid;
+  gap: 10px;
+}
+
+.library-edit-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
 .library-english {
   font-size: 0.94rem;
   font-weight: 900;
@@ -450,6 +462,32 @@ time {
   color: #666666;
   font-size: 0.76rem;
   font-weight: 800;
+}
+
+.library-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.mini-action {
+  min-height: 38px;
+  border: 2px solid #111111;
+  border-radius: 10px;
+  color: #111111;
+  background: #fffef9;
+  box-shadow: 2px 2px 0 #111111;
+  font-size: 0.76rem;
+  font-weight: 1000;
+}
+
+.mini-action.primary {
+  background: #facc15;
+}
+
+.mini-action.danger {
+  color: #fffef9;
+  background: #ef4444;
 }
 
 .empty-box,
