@@ -235,6 +235,7 @@ textarea:focus {
 
 .reveal-button,
 .primary-action,
+.secondary-action,
 .feedback,
 .voice-button,
 .nav-button {
@@ -245,6 +246,7 @@ textarea:focus {
 
 .reveal-button:active,
 .primary-action:active,
+.secondary-action:active,
 .feedback:active,
 .voice-button:active,
 .nav-button:active {
@@ -253,15 +255,23 @@ textarea:focus {
 }
 
 .reveal-button,
-.primary-action {
+.primary-action,
+.secondary-action {
   width: 100%;
   min-height: 48px;
   border: 2px solid #111111;
   border-radius: 12px;
   color: #111111;
-  background: #facc15;
   box-shadow: 3px 3px 0 #111111;
   font-weight: 900;
+}
+
+.primary-action {
+  background: #facc15;
+}
+
+.secondary-action {
+  background: #dbeafe;
 }
 
 .answer-card {
@@ -509,6 +519,10 @@ time {
 
 .backup-card p {
   margin: 0;
+}
+
+.version-card {
+  background: #eef6ff;
 }
 
 .backup-stats {

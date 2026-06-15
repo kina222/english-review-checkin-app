@@ -15,6 +15,7 @@ import {
 } from "./storage.js";
 
 const app = document.querySelector("#app");
+const APP_VERSION = "2026.06.15.4";
 
 const uiState = {
   tab: "review",
@@ -335,10 +336,16 @@ function renderSettings() {
         </div>
         <button class="primary-action" type="button" id="exportButton">导出 JSON 备份</button>
       </div>
+      <div class="backup-card version-card">
+        <p>当前版本：<strong>${APP_VERSION}</strong></p>
+        <p>如果桌面入口还显示旧界面，可以点这里刷新 App 外壳。已录入内容不会被删除。</p>
+        <button class="secondary-action" type="button" id="refreshAppButton">刷新到最新版</button>
+      </div>
     </article>
   `;
 
   views.settings.querySelector("#exportButton").addEventListener("click", handleExport);
+  views.settings.querySelector("#refreshAppButton").addEventListener("click", handleRefreshAppShell);
 }
 
 function handleAddSubmit(event) {
@@ -441,6 +448,26 @@ function handleExport() {
   link.remove();
   URL.revokeObjectURL(url);
   showToast("JSON 备份已导出。");
+}
+
+async function handleRefreshAppShell() {
+  showToast("正在刷新 App 外壳...");
+
+  try {
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((key) => caches.delete(key)));
+    }
+
+    if ("serviceWorker" in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map((registration) => registration.unregister()));
+    }
+  } catch {
+    showToast("刷新缓存时遇到问题，正在尝试重新加载。");
+  }
+
+  window.location.replace(`./?refresh=${Date.now()}`);
 }
 
 function startVoiceInput(field, button) {
