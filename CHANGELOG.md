@@ -31,6 +31,8 @@
 - 新增 PWA 基础配置：`manifest.webmanifest`、`service-worker.js`、`apple-touch-icon` 和 `.nojekyll`。
 - 将正式版资源路径改为相对路径，兼容 GitHub Pages 仓库子路径部署。
 - 将线上部署仓库切换为 `kina222/english-review-checkin-app`，并确认 GitHub Pages 地址可公开访问。
+- 调整新增页输入框字号到 `16px`，减少手机浏览器聚焦时自动放大。
+- 优化 App 内听写体验，支持显示临时识别文字并区分英文、中文追加间隔。
 
 ## 2026-06-06
 

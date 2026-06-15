@@ -365,16 +365,40 @@ function startVoiceInput(field, button) {
   uiState.recognition = recognition;
   recognition.lang = field === "english" ? "en-US" : "zh-CN";
   recognition.continuous = false;
-  recognition.interimResults = false;
+  recognition.interimResults = true;
   recognition.maxAlternatives = 1;
 
   button.classList.add("is-recording");
-  status.textContent = "正在听写，请现在开始说话...";
+  status.textContent = "正在听写，请现在开始说话。识别到的文字会先显示在这里。";
+  const originalText = input.value.trim();
+  let committedText = "";
 
   recognition.onresult = (event) => {
-    const text = event.results[0][0].transcript;
-    input.value = input.value.trim() ? `${input.value.trim()} ${text}` : text;
-    showToast("语音已写入。");
+    let interimText = "";
+
+    for (let index = event.resultIndex; index < event.results.length; index += 1) {
+      const text = event.results[index][0].transcript.trim();
+
+      if (!text) {
+        continue;
+      }
+
+      if (event.results[index].isFinal) {
+        committedText = appendVoiceText(committedText, text, field);
+      } else {
+        interimText = appendVoiceText(interimText, text, field);
+      }
+    }
+
+    if (interimText) {
+      status.textContent = `正在听写：${interimText}`;
+    }
+
+    if (committedText) {
+      input.value = appendVoiceText(originalText, committedText, field);
+      status.textContent = "语音已写入。";
+      showToast("语音已写入。");
+    }
   };
 
   recognition.onerror = (event) => {
@@ -384,7 +408,7 @@ function startVoiceInput(field, button) {
   recognition.onend = () => {
     uiState.recognition = null;
     button.classList.remove("is-recording");
-    if (status.textContent === "正在听写，请现在开始说话...") {
+    if (status.textContent.startsWith("正在听写")) {
       status.textContent = "没有收到语音。可以再点一次听写，或用系统输入法语音。";
     }
   };
@@ -394,6 +418,21 @@ function startVoiceInput(field, button) {
   } catch {
     status.textContent = "语音启动失败，请使用系统输入法语音。";
   }
+}
+
+function appendVoiceText(currentText, addedText, field) {
+  const current = currentText.trim();
+  const added = addedText.trim();
+
+  if (!current) {
+    return added;
+  }
+
+  if (!added) {
+    return current;
+  }
+
+  return field === "english" ? `${current} ${added}` : `${current}${added}`;
 }
 
 function getVoiceErrorMessage(error) {
