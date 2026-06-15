@@ -1,5 +1,6 @@
 import {
   addReviewItem,
+  archiveReviewItem,
   countDueItems,
   exportBackup,
   getActiveItems,
@@ -9,7 +10,8 @@ import {
   recordReviewResult,
   saveDailyCheckIn,
   saveTodaySession,
-  toDateOnly
+  toDateOnly,
+  updateReviewItem
 } from "./storage.js";
 
 const app = document.querySelector("#app");
@@ -20,7 +22,8 @@ const uiState = {
   session: [],
   activeSessionEntry: null,
   answerVisible: false,
-  recognition: null
+  recognition: null,
+  editingItemId: null
 };
 
 app.innerHTML = `
@@ -238,15 +241,44 @@ function renderAdd() {
 function renderLibrary() {
   const itemCards = uiState.items
     .map(
-      (item) => `
-        <li class="library-card">
-          <div>
-            <p class="library-english">${escapeHtml(item.english)}</p>
-            <p class="library-chinese">${escapeHtml(item.chinese)}</p>
-          </div>
-          <time datetime="${item.nextReviewAt}">下次复习：${item.nextReviewAt}</time>
-        </li>
-      `
+      (item) => {
+        const isEditing = uiState.editingItemId === item.id;
+
+        return `
+          <li class="library-card" data-item-id="${item.id}">
+            ${
+              isEditing
+                ? `
+                  <form class="library-edit-form" data-edit-form="${item.id}">
+                    <label>
+                      <span>英文内容</span>
+                      <textarea rows="3" data-edit-english>${escapeHtml(item.english)}</textarea>
+                    </label>
+                    <label>
+                      <span>中文意思</span>
+                      <textarea rows="3" data-edit-chinese>${escapeHtml(item.chinese)}</textarea>
+                    </label>
+                    <div class="library-actions">
+                      <button class="mini-action primary" type="submit">保存</button>
+                      <button class="mini-action" type="button" data-cancel-edit="${item.id}">取消</button>
+                    </div>
+                  </form>
+                `
+                : `
+                  <div>
+                    <p class="library-english">${escapeHtml(item.english)}</p>
+                    <p class="library-chinese">${escapeHtml(item.chinese)}</p>
+                  </div>
+                  <time datetime="${item.nextReviewAt}">下次复习：${item.nextReviewAt}</time>
+                  <div class="library-actions">
+                    <button class="mini-action" type="button" data-edit-item="${item.id}">编辑</button>
+                    <button class="mini-action danger" type="button" data-delete-item="${item.id}">删除</button>
+                  </div>
+                `
+            }
+          </li>
+        `;
+      }
     )
     .join("");
 
@@ -263,6 +295,28 @@ function renderLibrary() {
       }
     </article>
   `;
+
+  views.library.querySelectorAll("[data-edit-item]").forEach((button) => {
+    button.addEventListener("click", () => {
+      uiState.editingItemId = button.dataset.editItem;
+      renderLibrary();
+    });
+  });
+
+  views.library.querySelectorAll("[data-cancel-edit]").forEach((button) => {
+    button.addEventListener("click", () => {
+      uiState.editingItemId = null;
+      renderLibrary();
+    });
+  });
+
+  views.library.querySelectorAll("[data-edit-form]").forEach((form) => {
+    form.addEventListener("submit", handleLibraryEditSubmit);
+  });
+
+  views.library.querySelectorAll("[data-delete-item]").forEach((button) => {
+    button.addEventListener("click", () => handleLibraryDelete(button.dataset.deleteItem));
+  });
 }
 
 function renderSettings() {
@@ -304,6 +358,53 @@ function handleAddSubmit(event) {
   englishInput.value = "";
   chineseInput.value = "";
   showToast("已收入英语金库，3 天后复习。");
+  refreshApp();
+}
+
+function handleLibraryEditSubmit(event) {
+  event.preventDefault();
+
+  const form = event.currentTarget;
+  const itemId = form.dataset.editForm;
+  const english = form.querySelector("[data-edit-english]").value.trim();
+  const chinese = form.querySelector("[data-edit-chinese]").value.trim();
+
+  if (!english || !chinese) {
+    showToast("英文和中文都要填写。");
+    return;
+  }
+
+  const updated = updateReviewItem({ itemId, english, chinese });
+  if (!updated) {
+    showToast("没有找到这条内容。");
+    refreshApp();
+    return;
+  }
+
+  uiState.editingItemId = null;
+  showToast("内容已更新。");
+  refreshApp();
+}
+
+function handleLibraryDelete(itemId) {
+  const item = uiState.items.find((entry) => entry.id === itemId);
+  if (!item) return;
+
+  const confirmed = window.confirm(`确定删除这条内容吗？\n\n${item.english}`);
+  if (!confirmed) return;
+
+  const archived = archiveReviewItem(itemId);
+  if (!archived) {
+    showToast("没有找到这条内容。");
+    refreshApp();
+    return;
+  }
+
+  if (uiState.editingItemId === itemId) {
+    uiState.editingItemId = null;
+  }
+
+  showToast("已从内容库删除。");
   refreshApp();
 }
 

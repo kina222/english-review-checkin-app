@@ -44,6 +44,32 @@ export function addReviewItem({ english, chinese }) {
   return item;
 }
 
+export function updateReviewItem({ itemId, english, chinese }) {
+  const state = loadState();
+  const item = state.items.find((entry) => entry.id === itemId && !entry.archived);
+  if (!item) return null;
+
+  item.english = english.trim();
+  item.chinese = chinese.trim();
+  item.updatedAt = new Date().toISOString();
+
+  saveState(state);
+  return item;
+}
+
+export function archiveReviewItem(itemId) {
+  const state = loadState();
+  const item = state.items.find((entry) => entry.id === itemId && !entry.archived);
+  if (!item) return null;
+
+  item.archived = true;
+  item.archivedAt = new Date().toISOString();
+  saveState(state);
+  removeItemFromStoredSession(itemId);
+
+  return item;
+}
+
 export function getActiveItems() {
   return loadState().items.filter((item) => !item.archived);
 }
@@ -190,6 +216,27 @@ function addDays(value, days) {
   return toDateOnly(date);
 }
 
+function removeItemFromStoredSession(itemId) {
+  const storedDate = localStorage.getItem(SESSION_DATE_KEY);
+  const storedSession = localStorage.getItem(SESSION_KEY);
+
+  if (!storedDate || !storedSession) {
+    return;
+  }
+
+  try {
+    const parsed = JSON.parse(storedSession);
+    if (!Array.isArray(parsed)) return;
+
+    const nextSession = parsed.filter((entry) => entry.id !== itemId);
+    if (nextSession.length !== parsed.length) {
+      saveTodaySession(nextSession, storedDate);
+    }
+  } catch {
+    clearTodaySession();
+  }
+}
+
 function normalizeState(value) {
   return {
     items: Array.isArray(value?.items) ? value.items.map(normalizeItem) : [],
@@ -204,9 +251,11 @@ function normalizeItem(item) {
     english: String(item.english || ""),
     chinese: String(item.chinese || ""),
     createdAt: item.createdAt || new Date().toISOString(),
+    updatedAt: item.updatedAt || null,
     nextReviewAt: item.nextReviewAt || addDays(new Date(), REVIEW_INTERVALS[0]),
     reviewCount: Number.isFinite(item.reviewCount) ? item.reviewCount : 0,
-    archived: Boolean(item.archived)
+    archived: Boolean(item.archived),
+    archivedAt: item.archivedAt || null
   };
 }
 
