@@ -7,6 +7,7 @@ import {
   getReviewLimit,
   getTodayCheckIn,
   getTodaySession,
+  importBackup,
   recordReviewResult,
   saveDailyCheckIn,
   saveTodaySession,
@@ -15,7 +16,7 @@ import {
 } from "./storage.js";
 
 const app = document.querySelector("#app");
-const APP_VERSION = "2026.06.15.4";
+const APP_VERSION = "2026.06.15.5";
 
 const uiState = {
   tab: "review",
@@ -326,7 +327,7 @@ function renderSettings() {
     <article class="panel-block">
       <div class="section-title">
         <h2>贝里管家</h2>
-        <span>只导出</span>
+        <span>导出 / 导入</span>
       </div>
       <div class="backup-card">
         <p>数据只保存在本地。建议经常导出一份 JSON 备份，避免浏览器清理数据后丢失。</p>
@@ -335,6 +336,12 @@ function renderSettings() {
           <span>复习记录 ${backup.reviewLogs.length} 条</span>
         </div>
         <button class="primary-action" type="button" id="exportButton">导出 JSON 备份</button>
+      </div>
+      <div class="backup-card import-card">
+        <p>换浏览器、换手机或桌面入口数据为空时，可以导入之前导出的 JSON。导入会合并内容：重复跳过，新内容补进来。</p>
+        <button class="secondary-action" type="button" id="importButton">导入 JSON 备份</button>
+        <input class="file-input" id="importFileInput" type="file" accept="application/json,.json" />
+        <p class="helper-text" id="importStatus">不会覆盖当前内容。</p>
       </div>
       <div class="backup-card version-card">
         <p>当前版本：<strong>${APP_VERSION}</strong></p>
@@ -345,6 +352,10 @@ function renderSettings() {
   `;
 
   views.settings.querySelector("#exportButton").addEventListener("click", handleExport);
+  views.settings.querySelector("#importButton").addEventListener("click", () => {
+    views.settings.querySelector("#importFileInput").click();
+  });
+  views.settings.querySelector("#importFileInput").addEventListener("change", handleImport);
   views.settings.querySelector("#refreshAppButton").addEventListener("click", handleRefreshAppShell);
 }
 
@@ -448,6 +459,34 @@ function handleExport() {
   link.remove();
   URL.revokeObjectURL(url);
   showToast("JSON 备份已导出。");
+}
+
+async function handleImport(event) {
+  const input = event.currentTarget;
+  const status = views.settings.querySelector("#importStatus");
+  const file = input.files?.[0];
+
+  if (!file) return;
+
+  try {
+    const text = await file.text();
+    const backup = JSON.parse(text);
+    const result = importBackup(backup);
+
+    uiState.answerVisible = false;
+    uiState.editingItemId = null;
+    refreshApp();
+    switchTab("settings");
+
+    const message = `导入完成：新增 ${result.addedItems} 条，跳过重复 ${result.skippedItems} 条。`;
+    views.settings.querySelector("#importStatus").textContent = message;
+    showToast(message);
+  } catch {
+    status.textContent = "导入失败。请确认选择的是本 App 导出的 JSON 备份文件。";
+    showToast("导入失败，请检查备份文件。");
+  } finally {
+    input.value = "";
+  }
 }
 
 async function handleRefreshAppShell() {

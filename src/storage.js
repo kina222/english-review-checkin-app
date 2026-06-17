@@ -190,6 +190,62 @@ export function exportBackup() {
   };
 }
 
+export function importBackup(backup) {
+  const incoming = normalizeBackup(backup);
+  const state = loadState();
+  const existingItemKeys = new Set(state.items.map(getItemContentKey));
+  const existingIds = new Set(state.items.map((item) => item.id));
+  const existingLogIds = new Set(state.reviewLogs.map((log) => log.id));
+  const existingCheckInDates = new Set(state.dailyCheckIns.map((entry) => entry.date));
+  let addedItems = 0;
+  let skippedItems = 0;
+  let addedReviewLogs = 0;
+  let addedCheckIns = 0;
+
+  incoming.items.forEach((item) => {
+    const contentKey = getItemContentKey(item);
+
+    if (item.archived || !contentKey || existingItemKeys.has(contentKey)) {
+      skippedItems += 1;
+      return;
+    }
+
+    const nextItem = { ...item };
+    while (existingIds.has(nextItem.id)) {
+      nextItem.id = crypto.randomUUID();
+    }
+
+    state.items.unshift(nextItem);
+    existingIds.add(nextItem.id);
+    existingItemKeys.add(contentKey);
+    addedItems += 1;
+  });
+
+  incoming.reviewLogs.forEach((log) => {
+    if (!log.id || existingLogIds.has(log.id)) return;
+    state.reviewLogs.push(log);
+    existingLogIds.add(log.id);
+    addedReviewLogs += 1;
+  });
+
+  incoming.dailyCheckIns.forEach((entry) => {
+    if (!entry.date || existingCheckInDates.has(entry.date)) return;
+    state.dailyCheckIns.push(entry);
+    existingCheckInDates.add(entry.date);
+    addedCheckIns += 1;
+  });
+
+  saveState(state);
+  clearTodaySession();
+
+  return {
+    addedItems,
+    skippedItems,
+    addedReviewLogs,
+    addedCheckIns
+  };
+}
+
 export function getReviewLimit() {
   return REVIEW_LIMIT;
 }
@@ -246,6 +302,14 @@ function normalizeState(value) {
   };
 }
 
+function normalizeBackup(value) {
+  if (!value || value.version !== 1) {
+    throw new Error("unsupported-backup");
+  }
+
+  return normalizeState(value);
+}
+
 function normalizeItem(item) {
   return {
     id: item.id || crypto.randomUUID(),
@@ -258,6 +322,14 @@ function normalizeItem(item) {
     archived: Boolean(item.archived),
     archivedAt: item.archivedAt || null
   };
+}
+
+function getItemContentKey(item) {
+  const english = String(item.english || "").trim().toLowerCase().replace(/\s+/g, " ");
+  const chinese = String(item.chinese || "").trim().replace(/\s+/g, "");
+
+  if (!english || !chinese) return "";
+  return `${english}::${chinese}`;
 }
 
 function cloneEmptyState() {

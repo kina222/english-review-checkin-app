@@ -525,6 +525,14 @@ time {
   background: #eef6ff;
 }
 
+.import-card {
+  background: #f0fdf4;
+}
+
+.file-input {
+  display: none;
+}
+
 .backup-stats {
   display: grid;
   grid-template-columns: 1fr 1fr;
