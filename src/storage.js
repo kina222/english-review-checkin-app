@@ -3,7 +3,7 @@ const STORAGE_KEY = "english-review-checkin:v1";
 const SESSION_KEY = "english-review-checkin:today-session:v1";
 const SESSION_DATE_KEY = "english-review-checkin:today-session-date:v1";
 const REVIEW_LIMIT = 15;
-const REVIEW_INTERVALS = [3, 7, 15, 30];
+const REVIEW_INTERVALS = [1, 3, 7, 15, 30];
 
 const emptyState = {
   items: [],
