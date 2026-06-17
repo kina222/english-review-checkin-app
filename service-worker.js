@@ -1,11 +1,11 @@
-const CACHE_NAME = "english-review-checkin-v8";
+const CACHE_NAME = "english-review-checkin-v9";
 const APP_SHELL = [
   "./",
   "index.html",
   "manifest.webmanifest",
-  "src/main.js?v=20260617-speech",
+  "src/main.js?v=20260617-fixed-nav",
   "src/storage.js",
-  "src/styles.css?v=20260617-speech",
+  "src/styles.css?v=20260617-fixed-nav",
   "assets/nami-avatar.jpg",
   "assets/icon-180.png?v=20260615-pwa-icon",
   "assets/icon-192.png?v=20260615-pwa-icon",

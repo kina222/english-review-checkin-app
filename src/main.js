@@ -16,7 +16,7 @@ import {
 } from "./storage.js";
 
 const app = document.querySelector("#app");
-const APP_VERSION = "2026.06.17.2";
+const APP_VERSION = "2026.06.17.3";
 
 const uiState = {
   tab: "review",
