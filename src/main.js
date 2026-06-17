@@ -16,7 +16,7 @@ import {
 } from "./storage.js";
 
 const app = document.querySelector("#app");
-const APP_VERSION = "2026.06.15.5";
+const APP_VERSION = "2026.06.17.1";
 
 const uiState = {
   tab: "review",
@@ -375,7 +375,7 @@ function handleAddSubmit(event) {
   addReviewItem({ english, chinese });
   englishInput.value = "";
   chineseInput.value = "";
-  showToast("已收入英语金库，3 天后复习。");
+  showToast("已收入英语金库，明天开始复习。");
   refreshApp();
 }
 
@@ -670,10 +670,11 @@ function getCompletedCheckInCount() {
 }
 
 function getStageText(reviewCount) {
-  if (reviewCount === 0) return "第 3 天复习";
-  if (reviewCount === 1) return "第 7 天复习";
-  if (reviewCount === 2) return "第 15 天复习";
-  if (reviewCount === 3) return "第 30 天复习";
+  if (reviewCount === 0) return "明天复习";
+  if (reviewCount === 1) return "3 天后复习";
+  if (reviewCount === 2) return "第 7 天复习";
+  if (reviewCount === 3) return "第 15 天复习";
+  if (reviewCount === 4) return "第 30 天复习";
   return "30 天循环";
 }
 
