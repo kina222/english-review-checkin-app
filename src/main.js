@@ -16,7 +16,7 @@ import {
 } from "./storage.js";
 
 const app = document.querySelector("#app");
-const APP_VERSION = "2026.06.17.1";
+const APP_VERSION = "2026.06.17.2";
 
 const uiState = {
   tab: "review",
@@ -128,7 +128,7 @@ function renderReview() {
         <div class="poster-label">CLEAR</div>
         <div class="empty-icon">🍊</div>
         <h2>${session.length ? "今天打卡完成" : "今天没有到期复习"}</h2>
-        <p>${session.length ? "娜美的航线账本已经核对完毕。" : "新内容会在第 3 天进入复习。今天可以先新增一点日常英语。"}</p>
+        <p>${session.length ? "娜美的航线账本已经核对完毕。" : "新内容会在明天进入复习。今天可以先新增一点日常英语。"}</p>
         <div class="summary-row">
           <span>今日任务</span>
           <strong>${summary.completedCount} / ${summary.plannedCount}</strong>
@@ -150,8 +150,10 @@ function renderReview() {
     return;
   }
 
-  const promptText = pendingEntry.promptSide === "english" ? item.english : item.chinese;
-  const answerText = pendingEntry.promptSide === "english" ? item.chinese : item.english;
+  const promptIsEnglish = pendingEntry.promptSide === "english";
+  const answerIsEnglish = !promptIsEnglish;
+  const promptText = promptIsEnglish ? item.english : item.chinese;
+  const answerText = promptIsEnglish ? item.chinese : item.english;
   const promptLabel = pendingEntry.promptSide === "english" ? "英文提示" : "中文提示";
   const nextStageText = getStageText(item.reviewCount);
 
@@ -165,11 +167,19 @@ function renderReview() {
         <span>${nextStageText}</span>
         <span>今日最多 ${getReviewLimit()} 条</span>
       </div>
-      <div class="prompt-text">${escapeHtml(promptText)}</div>
+      <div class="prompt-text">
+        <span>${escapeHtml(promptText)}</span>
+        ${promptIsEnglish ? renderSpeakButton(item.english, "朗读英文") : ""}
+      </div>
       <div class="answer-zone">
         ${
           uiState.answerVisible
-            ? `<div class="answer-card">${escapeHtml(answerText)}</div>`
+            ? `
+              <div class="answer-card">
+                <span>${escapeHtml(answerText)}</span>
+                ${answerIsEnglish ? renderSpeakButton(item.english, "朗读答案") : ""}
+              </div>
+            `
             : `<button class="reveal-button" type="button" data-action="reveal">翻开隐藏答案</button>`
         }
       </div>
@@ -198,6 +208,8 @@ function renderReview() {
   views.review.querySelectorAll("[data-feedback]").forEach((button) => {
     button.addEventListener("click", () => handleFeedback(button.dataset.feedback));
   });
+
+  bindSpeakButtons(views.review);
 }
 
 function renderAdd() {
@@ -268,7 +280,10 @@ function renderLibrary() {
                 `
                 : `
                   <div>
-                    <p class="library-english">${escapeHtml(item.english)}</p>
+                    <div class="library-english-row">
+                      <p class="library-english">${escapeHtml(item.english)}</p>
+                      ${renderSpeakButton(item.english, "朗读")}
+                    </div>
                     <p class="library-chinese">${escapeHtml(item.chinese)}</p>
                   </div>
                   <time datetime="${item.nextReviewAt}">下次复习：${item.nextReviewAt}</time>
@@ -319,6 +334,8 @@ function renderLibrary() {
   views.library.querySelectorAll("[data-delete-item]").forEach((button) => {
     button.addEventListener("click", () => handleLibraryDelete(button.dataset.deleteItem));
   });
+
+  bindSpeakButtons(views.library);
 }
 
 function renderSettings() {
@@ -682,6 +699,36 @@ function getFeedbackMessage(result) {
   if (result === "forgot") return "忘了：1 天后再出现。";
   if (result === "unclear") return "模糊：3 天后再出现。";
   return "熟了：进入下一档。";
+}
+
+function bindSpeakButtons(container) {
+  container.querySelectorAll("[data-speak-text]").forEach((button) => {
+    button.addEventListener("click", () => speakEnglish(button.dataset.speakText));
+  });
+}
+
+function renderSpeakButton(text, label) {
+  return `
+    <button class="speak-button" type="button" data-speak-text="${escapeHtml(text)}" aria-label="${escapeHtml(label)}">
+      <span aria-hidden="true">🔊</span>
+      <small>${escapeHtml(label)}</small>
+    </button>
+  `;
+}
+
+function speakEnglish(text) {
+  if (!("speechSynthesis" in window) || !window.SpeechSynthesisUtterance) {
+    showToast("当前浏览器不支持朗读。");
+    return;
+  }
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "en-US";
+  utterance.rate = 0.88;
+  utterance.pitch = 1;
+
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(utterance);
 }
 
 function showToast(message) {
