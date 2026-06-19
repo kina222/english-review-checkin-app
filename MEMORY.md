@@ -16,4 +16,5 @@
 - 遇到需求不清楚时，先写入 `docs/requirements.md` 的“待确认问题”，不要自行扩大范围。
 - 每次有效变更必须写入 `CHANGELOG.md`。
 - 线上版本更新不能更换 `localStorage` 主数据 key；如果以后必须调整存储结构，要先做迁移和导出备份提示，避免用户已录入内容丢失。
+- 用户已经开始连续打卡；后续版本更新必须保护 `dailyCheckIns` 和 `STORAGE_KEY`，不能因为界面或功能更新让打卡记录中断。
 - 用户数据按网址隔离；`localhost`、旧 GitHub Pages 地址、当前 `kina222.github.io/english-review-checkin-app` 和手机主屏幕入口可能不是同一份本地数据。正式使用后固定当前线上地址。

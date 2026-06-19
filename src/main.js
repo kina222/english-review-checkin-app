@@ -16,7 +16,7 @@ import {
 } from "./storage.js";
 
 const app = document.querySelector("#app");
-const APP_VERSION = "2026.06.17.3";
+const APP_VERSION = "2026.06.19.1";
 
 const uiState = {
   tab: "review",
@@ -24,6 +24,7 @@ const uiState = {
   session: [],
   activeSessionEntry: null,
   answerVisible: false,
+  answerDraft: "",
   recognition: null,
   editingItemId: null
 };
@@ -156,6 +157,9 @@ function renderReview() {
   const answerText = promptIsEnglish ? item.chinese : item.english;
   const promptLabel = pendingEntry.promptSide === "english" ? "英文提示" : "中文提示";
   const nextStageText = getStageText(item.reviewCount);
+  const answerLabel = answerIsEnglish ? "输入你想起来的英文" : "输入你想起来的中文";
+  const answerPlaceholder = answerIsEnglish ? "先自己写英文，再对照答案。" : "先自己写中文，再对照答案。";
+  const keyboardHint = answerIsEnglish ? "latin" : "text";
 
   views.review.innerHTML = `
     <article class="poster-card">
@@ -175,12 +179,23 @@ function renderReview() {
         ${
           uiState.answerVisible
             ? `
+              <div class="draft-card">
+                <span>你刚才写的是</span>
+                <p>${escapeHtml(uiState.answerDraft || "这次没有输入。")}</p>
+              </div>
               <div class="answer-card">
+                <strong>标准答案</strong>
                 <span>${escapeHtml(answerText)}</span>
                 ${answerIsEnglish ? renderSpeakButton(item.english, "朗读答案") : ""}
               </div>
             `
-            : `<button class="reveal-button" type="button" data-action="reveal">翻开隐藏答案</button>`
+            : `
+              <label class="recall-box">
+                <span>${answerLabel}</span>
+                <textarea id="recallInput" rows="4" autocomplete="off" inputmode="${keyboardHint}" placeholder="${answerPlaceholder}"></textarea>
+              </label>
+              <button class="reveal-button" type="button" data-action="reveal">对照答案</button>
+            `
         }
       </div>
     </article>
@@ -201,6 +216,7 @@ function renderReview() {
   `;
 
   views.review.querySelector("[data-action='reveal']")?.addEventListener("click", () => {
+    uiState.answerDraft = views.review.querySelector("#recallInput")?.value.trim() || "";
     uiState.answerVisible = true;
     renderReview();
   });
@@ -458,6 +474,7 @@ function handleFeedback(result) {
   saveTodaySession(uiState.session);
   saveCompletedCheckInIfNeeded(getTodaySummary());
   uiState.answerVisible = false;
+  uiState.answerDraft = "";
   showToast(getFeedbackMessage(result));
   refreshApp();
 }
@@ -491,6 +508,7 @@ async function handleImport(event) {
     const result = importBackup(backup);
 
     uiState.answerVisible = false;
+    uiState.answerDraft = "";
     uiState.editingItemId = null;
     refreshApp();
     switchTab("settings");
