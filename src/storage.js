@@ -30,10 +30,26 @@ export function saveState(state) {
 export function addReviewItem({ english, chinese }) {
   const state = loadState();
   const createdAt = new Date().toISOString();
+  const itemDraft = {
+    english: english.trim(),
+    chinese: chinese.trim()
+  };
+  const draftKey = getItemContentKey(itemDraft);
+  const existingItem = state.items.find(
+    (entry) => !entry.archived && getItemContentKey(entry) === draftKey
+  );
+
+  if (existingItem) {
+    return {
+      status: "duplicate",
+      item: existingItem
+    };
+  }
+
   const item = {
     id: crypto.randomUUID(),
-    english: english.trim(),
-    chinese: chinese.trim(),
+    english: itemDraft.english,
+    chinese: itemDraft.chinese,
     createdAt,
     nextReviewAt: addDays(new Date(), REVIEW_INTERVALS[0]),
     reviewCount: 0,
@@ -42,7 +58,10 @@ export function addReviewItem({ english, chinese }) {
 
   state.items.unshift(item);
   saveState(state);
-  return item;
+  return {
+    status: "added",
+    item
+  };
 }
 
 export function updateReviewItem({ itemId, english, chinese }) {
