@@ -16,7 +16,62 @@ import {
 } from "./storage.js";
 
 const app = document.querySelector("#app");
-const APP_VERSION = "2026.06.19.2";
+const APP_VERSION = "2026.06.19.3";
+const PHONETIC_DICTIONARY = {
+  a: "ə",
+  all: "ɔːl",
+  around: "əˈraʊnd",
+  be: "biː",
+  big: "bɪɡ",
+  bit: "bɪt",
+  business: "ˈbɪznəs",
+  "can't": "kænt",
+  contact: "ˈkɑːntækt",
+  deal: "diːl",
+  details: "ˈdiːteɪlz",
+  do: "duː",
+  does: "dʌz",
+  give: "ɡɪv",
+  go: "ɡoʊ",
+  going: "ˈɡoʊɪŋ",
+  hand: "hænd",
+  happens: "ˈhæpənz",
+  hear: "hɪr",
+  here: "hɪr",
+  how: "haʊ",
+  "how's": "haʊz",
+  hurry: "ˈhɜːri",
+  i: "aɪ",
+  "i'll": "aɪl",
+  "i'm": "aɪm",
+  in: "ɪn",
+  it: "ɪt",
+  "it's": "ɪts",
+  like: "laɪk",
+  me: "miː",
+  meet: "miːt",
+  merry: "ˈmeri",
+  nice: "naɪs",
+  not: "nɑːt",
+  of: "əv",
+  out: "aʊt",
+  picked: "pɪkt",
+  right: "raɪt",
+  stick: "stɪk",
+  such: "sʌtʃ",
+  terrible: "ˈterəbl",
+  the: "ðə",
+  thing: "θɪŋ",
+  this: "ðɪs",
+  time: "taɪm",
+  to: "tuː",
+  up: "ʌp",
+  what: "wʌt",
+  "what's": "wʌts",
+  with: "wɪð",
+  work: "wɜːrk",
+  you: "juː"
+};
 
 const uiState = {
   tab: "review",
@@ -173,6 +228,7 @@ function renderReview() {
       </div>
       <div class="prompt-text">
         <span>${escapeHtml(promptText)}</span>
+        ${promptIsEnglish ? renderPronunciationHint(item.english) : ""}
         ${promptIsEnglish ? renderSpeakButton(item.english, "朗读英文") : ""}
       </div>
       <div class="answer-zone">
@@ -186,6 +242,7 @@ function renderReview() {
               <div class="answer-card">
                 <strong>标准答案</strong>
                 <span>${escapeHtml(answerText)}</span>
+                ${answerIsEnglish ? renderPronunciationHint(item.english) : ""}
                 ${answerIsEnglish ? renderSpeakButton(item.english, "朗读答案") : ""}
               </div>
             `
@@ -218,6 +275,7 @@ function renderReview() {
   views.review.querySelector("[data-action='reveal']")?.addEventListener("click", () => {
     uiState.answerDraft = views.review.querySelector("#recallInput")?.value.trim() || "";
     uiState.answerVisible = true;
+    playSound("reveal");
     renderReview();
   });
 
@@ -408,6 +466,7 @@ function handleAddSubmit(event) {
   const result = addReviewItem({ english, chinese });
 
   if (result.status === "duplicate") {
+    playSound("soft");
     showToast("内容库里已经有这条了。");
     switchTab("library");
     return;
@@ -415,6 +474,7 @@ function handleAddSubmit(event) {
 
   englishInput.value = "";
   chineseInput.value = "";
+  playSound("success");
   showToast("已收入英语金库，明天开始复习。");
   refreshApp();
 }
@@ -482,6 +542,7 @@ function handleFeedback(result) {
   saveCompletedCheckInIfNeeded(getTodaySummary());
   uiState.answerVisible = false;
   uiState.answerDraft = "";
+  playFeedbackSound(result);
   showToast(getFeedbackMessage(result));
   refreshApp();
 }
@@ -726,6 +787,28 @@ function getFeedbackMessage(result) {
   return "熟了：进入下一档。";
 }
 
+function renderPronunciationHint(text) {
+  const hint = getPronunciationHint(text);
+  if (!hint) return "";
+
+  return `
+    <p class="phonetic-hint">
+      <span>发音提示</span>
+      <strong>/${escapeHtml(hint)}/</strong>
+    </p>
+  `;
+}
+
+function getPronunciationHint(text) {
+  const words = String(text)
+    .toLowerCase()
+    .match(/[a-z]+(?:'[a-z]+)?/g);
+
+  if (!words?.length) return "";
+
+  return words.map((word) => PHONETIC_DICTIONARY[word] || word).join(" ");
+}
+
 function bindSpeakButtons(container) {
   container.querySelectorAll("[data-speak-text]").forEach((button) => {
     button.addEventListener("click", () => speakEnglish(button.dataset.speakText));
@@ -754,6 +837,60 @@ function speakEnglish(text) {
 
   window.speechSynthesis.cancel();
   window.speechSynthesis.speak(utterance);
+}
+
+function playFeedbackSound(result) {
+  if (result === "forgot") {
+    playSound("wrong");
+    return;
+  }
+
+  if (result === "unclear") {
+    playSound("soft");
+    return;
+  }
+
+  playSound("correct");
+}
+
+function playSound(type) {
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return;
+
+  const audioContext = playSound.audioContext || new AudioContext();
+  playSound.audioContext = audioContext;
+
+  if (audioContext.state === "suspended") {
+    audioContext.resume().catch(() => {});
+  }
+
+  const patterns = {
+    success: [523.25, 659.25, 783.99],
+    correct: [659.25, 880],
+    reveal: [440, 554.37],
+    soft: [392, 329.63],
+    wrong: [246.94, 196]
+  };
+  const notes = patterns[type] || patterns.soft;
+  const now = audioContext.currentTime;
+
+  notes.forEach((frequency, index) => {
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    const start = now + index * 0.085;
+    const duration = type === "wrong" ? 0.13 : 0.105;
+
+    oscillator.type = type === "wrong" ? "triangle" : "sine";
+    oscillator.frequency.setValueAtTime(frequency, start);
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(0.045, start + 0.018);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+
+    oscillator.connect(gain);
+    gain.connect(audioContext.destination);
+    oscillator.start(start);
+    oscillator.stop(start + duration + 0.02);
+  });
 }
 
 function showToast(message) {
