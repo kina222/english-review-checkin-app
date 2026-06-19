@@ -16,7 +16,7 @@ import {
 } from "./storage.js";
 
 const app = document.querySelector("#app");
-const APP_VERSION = "2026.06.19.1";
+const APP_VERSION = "2026.06.19.2";
 
 const uiState = {
   tab: "review",
@@ -405,7 +405,14 @@ function handleAddSubmit(event) {
     return;
   }
 
-  addReviewItem({ english, chinese });
+  const result = addReviewItem({ english, chinese });
+
+  if (result.status === "duplicate") {
+    showToast("内容库里已经有这条了。");
+    switchTab("library");
+    return;
+  }
+
   englishInput.value = "";
   chineseInput.value = "";
   showToast("已收入英语金库，明天开始复习。");
