@@ -16,7 +16,7 @@ import {
 } from "./storage.js";
 
 const app = document.querySelector("#app");
-const APP_VERSION = "2026.06.19.3";
+const APP_VERSION = "2026.06.19.4";
 const PHONETIC_DICTIONARY = {
   a: "ə",
   all: "ɔːl",
