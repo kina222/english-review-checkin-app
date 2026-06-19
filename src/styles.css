@@ -231,6 +231,8 @@ textarea:focus {
 }
 
 .answer-zone {
+  display: grid;
+  gap: 10px;
   min-height: 58px;
 }
 
@@ -277,7 +279,22 @@ textarea:focus {
   background: #dbeafe;
 }
 
-.answer-card {
+.recall-box {
+  display: grid;
+  gap: 8px;
+  color: #545454;
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-align: left;
+}
+
+.recall-box textarea {
+  min-height: 96px;
+  font-weight: 800;
+}
+
+.answer-card,
+.draft-card {
   display: grid;
   gap: 10px;
   place-items: center;
@@ -289,6 +306,23 @@ textarea:focus {
   text-align: center;
   font-weight: 900;
   line-height: 1.5;
+}
+
+.draft-card {
+  border-style: solid;
+  background: #f8fafc;
+}
+
+.draft-card span,
+.answer-card strong {
+  color: #545454;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.draft-card p {
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .feedback-grid {
