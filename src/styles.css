@@ -570,6 +570,29 @@ time {
   font-weight: 1000;
 }
 
+.phonetic-hint {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  border: 1px solid #111111;
+  border-radius: 10px;
+  padding: 7px 9px;
+  background: rgba(219, 234, 254, 0.72);
+  color: #111111;
+  font-size: 0.76rem;
+  font-weight: 900;
+  line-height: 1.45;
+}
+
+.phonetic-hint span {
+  color: #545454;
+  font-size: 0.66rem;
+}
+
+.phonetic-hint strong {
+  overflow-wrap: anywhere;
+}
+
 .empty-box,
 .backup-card {
   border: 2px dashed #111111;
