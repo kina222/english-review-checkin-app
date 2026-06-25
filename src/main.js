@@ -1,9 +1,12 @@
 import {
+  addReviewGroup,
   addReviewItem,
   archiveReviewItem,
   countDueItems,
   exportBackup,
   getActiveItems,
+  getDueItems,
+  getReviewGroupLimit,
   getReviewLimit,
   getTodayCheckIn,
   getTodaySession,
@@ -16,7 +19,7 @@ import {
 } from "./storage.js";
 
 const app = document.querySelector("#app");
-const APP_VERSION = "2026.06.19.4";
+const APP_VERSION = "2026.06.25.1";
 const PHONETIC_DICTIONARY = {
   a: "ə",
   all: "ɔːl",
@@ -80,6 +83,8 @@ const uiState = {
   activeSessionEntry: null,
   answerVisible: false,
   answerDraft: "",
+  recallMode: "write",
+  forgotPreviewVisible: false,
   recognition: null,
   editingItemId: null
 };
@@ -179,6 +184,9 @@ function renderReview() {
 
   if (!pendingEntry) {
     const summary = getTodaySummary();
+    const groupInfo = getTodayGroupInfo();
+    const remainingDueCount = getRemainingDueCount();
+    const canAddGroup = session.length > 0 && remainingDueCount > 0 && groupInfo.current < groupInfo.max;
     views.review.innerHTML = `
       <article class="poster-card empty-review">
         <div class="poster-label">CLEAR</div>
@@ -189,11 +197,29 @@ function renderReview() {
           <span>今日任务</span>
           <strong>${summary.completedCount} / ${summary.plannedCount}</strong>
         </div>
+        ${
+          session.length
+            ? `
+              <div class="summary-row">
+                <span>今日组数</span>
+                <strong>${groupInfo.current} / ${groupInfo.max}</strong>
+              </div>
+            `
+            : ""
+        }
+        ${
+          canAddGroup
+            ? `<button class="secondary-action" type="button" data-action="add-review-group">再来一组</button>`
+            : session.length && remainingDueCount > 0
+              ? `<div class="empty-box compact">今天已经到 ${groupInfo.max} 组上限，剩下的继续保持逾期，明天还能复习。</div>`
+              : ""
+        }
         <button class="primary-action" type="button" data-action="go-add">写下新的英语手账</button>
       </article>
     `;
 
     views.review.querySelector("[data-action='go-add']").addEventListener("click", () => switchTab("add"));
+    views.review.querySelector("[data-action='add-review-group']")?.addEventListener("click", handleAddReviewGroup);
     saveCompletedCheckInIfNeeded(summary);
     return;
   }
@@ -245,18 +271,45 @@ function renderReview() {
                 ${answerIsEnglish ? renderPronunciationHint(item.english) : ""}
                 ${answerIsEnglish ? renderSpeakButton(item.english, "朗读答案") : ""}
               </div>
+              ${
+                uiState.forgotPreviewVisible
+                  ? `
+                    <div class="forgot-preview-card">
+                      <strong>先把它捞回来</strong>
+                      <p>再看一眼答案，必要的话点朗读，确认后再进入下一条。</p>
+                      ${renderSpeakButton(item.english, "再听一次")}
+                      <button class="primary-action" type="button" data-action="confirm-forgot">看完了，记为忘了</button>
+                    </div>
+                  `
+                  : ""
+              }
             `
             : `
+              <div class="mode-switch" aria-label="复习方式">
+                <button class="${uiState.recallMode === "write" ? "is-active" : ""}" type="button" data-recall-mode="write">手写练习</button>
+                <button class="${uiState.recallMode === "speak" ? "is-active" : ""}" type="button" data-recall-mode="speak">口语练习</button>
+              </div>
               <label class="recall-box">
                 <span>${answerLabel}</span>
                 <textarea id="recallInput" rows="4" autocomplete="off" inputmode="${keyboardHint}" placeholder="${answerPlaceholder}"></textarea>
               </label>
+              ${
+                uiState.recallMode === "speak"
+                  ? `
+                    <button class="voice-practice-button" type="button" data-action="recall-voice">
+                      <span>🎙</span>
+                      <strong>说答案</strong>
+                    </button>
+                    <p class="helper-text" id="recallStatus">点“说答案”后直接开口，识别文字会写进上面的框。</p>
+                  `
+                  : ""
+              }
               <button class="reveal-button" type="button" data-action="reveal">对照答案</button>
             `
         }
       </div>
     </article>
-    <div class="feedback-grid" ${uiState.answerVisible ? "" : "hidden"}>
+    <div class="feedback-grid" ${uiState.answerVisible && !uiState.forgotPreviewVisible ? "" : "hidden"}>
       <button class="feedback forgot" type="button" data-feedback="forgot">
         <strong>忘了</strong>
         <span>1 天后</span>
@@ -275,12 +328,28 @@ function renderReview() {
   views.review.querySelector("[data-action='reveal']")?.addEventListener("click", () => {
     uiState.answerDraft = views.review.querySelector("#recallInput")?.value.trim() || "";
     uiState.answerVisible = true;
+    uiState.forgotPreviewVisible = false;
     playSound("reveal");
     renderReview();
   });
 
+  views.review.querySelectorAll("[data-recall-mode]").forEach((button) => {
+    button.addEventListener("click", () => {
+      uiState.recallMode = button.dataset.recallMode;
+      renderReview();
+    });
+  });
+
+  views.review.querySelector("[data-action='recall-voice']")?.addEventListener("click", (event) => {
+    startRecallVoiceInput(answerIsEnglish ? "english" : "chinese", event.currentTarget);
+  });
+
   views.review.querySelectorAll("[data-feedback]").forEach((button) => {
     button.addEventListener("click", () => handleFeedback(button.dataset.feedback));
+  });
+
+  views.review.querySelector("[data-action='confirm-forgot']")?.addEventListener("click", () => {
+    handleFeedback("forgot", true);
   });
 
   bindSpeakButtons(views.review);
@@ -479,6 +548,28 @@ function handleAddSubmit(event) {
   refreshApp();
 }
 
+function handleAddReviewGroup() {
+  const result = addReviewGroup();
+
+  if (result.status === "maxed") {
+    showToast(`今天最多 ${getReviewGroupLimit()} 组。`);
+    return;
+  }
+
+  if (result.status === "empty") {
+    showToast("没有更多到期内容了。");
+    return;
+  }
+
+  uiState.answerVisible = false;
+  uiState.answerDraft = "";
+  uiState.forgotPreviewVisible = false;
+  uiState.session = result.session;
+  playSound("success");
+  showToast(`已加练 ${result.addedCount} 条。`);
+  renderAll();
+}
+
 function handleLibraryEditSubmit(event) {
   event.preventDefault();
 
@@ -526,9 +617,16 @@ function handleLibraryDelete(itemId) {
   refreshApp();
 }
 
-function handleFeedback(result) {
+function handleFeedback(result, confirmed = false) {
   const entry = uiState.activeSessionEntry;
   if (!entry) return;
+
+  if (result === "forgot" && !confirmed) {
+    uiState.forgotPreviewVisible = true;
+    playSound("wrong");
+    renderReview();
+    return;
+  }
 
   recordReviewResult({
     itemId: entry.id,
@@ -542,6 +640,7 @@ function handleFeedback(result) {
   saveCompletedCheckInIfNeeded(getTodaySummary());
   uiState.answerVisible = false;
   uiState.answerDraft = "";
+  uiState.forgotPreviewVisible = false;
   playFeedbackSound(result);
   showToast(getFeedbackMessage(result));
   refreshApp();
@@ -701,6 +800,93 @@ function startVoiceInput(field, button) {
   }
 }
 
+function startRecallVoiceInput(field, button) {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const status = views.review.querySelector("#recallStatus");
+  const input = views.review.querySelector("#recallInput");
+
+  if (!input) return;
+
+  if (!SpeechRecognition) {
+    if (status) status.textContent = "当前浏览器不支持 App 内语音，可以使用系统输入法语音。";
+    showToast("请使用系统输入法语音。");
+    return;
+  }
+
+  if (uiState.recognition) {
+    uiState.recognition.stop();
+    uiState.recognition = null;
+    return;
+  }
+
+  const recognition = new SpeechRecognition();
+  uiState.recognition = recognition;
+  recognition.lang = field === "english" ? "en-US" : "zh-CN";
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.maxAlternatives = 1;
+
+  button.classList.add("is-recording");
+  if (status) status.textContent = "正在听你说答案。";
+  const originalText = input.value.trim();
+  let committedText = "";
+  let hasVoiceText = false;
+
+  recognition.onresult = (event) => {
+    let interimText = "";
+
+    for (let index = event.resultIndex; index < event.results.length; index += 1) {
+      const text = event.results[index][0].transcript.trim();
+      if (!text) continue;
+
+      if (event.results[index].isFinal) {
+        committedText = appendVoiceText(committedText, text, field);
+        hasVoiceText = true;
+      } else {
+        interimText = appendVoiceText(interimText, text, field);
+        hasVoiceText = true;
+      }
+    }
+
+    const previewText = appendVoiceText(committedText, interimText, field);
+    if (previewText) {
+      input.value = appendVoiceText(originalText, previewText, field);
+      if (status) status.textContent = interimText ? "正在识别，文字会先临时显示。" : "口语答案已写入。";
+    }
+
+    if (committedText) {
+      input.value = appendVoiceText(originalText, committedText, field);
+    }
+  };
+
+  recognition.onerror = (event) => {
+    input.value = originalText;
+    if (status) status.textContent = getVoiceErrorMessage(event.error);
+  };
+
+  recognition.onend = () => {
+    uiState.recognition = null;
+    button.classList.remove("is-recording");
+
+    if (status?.textContent.startsWith("正在听")) {
+      input.value = originalText;
+      status.textContent = "没有收到语音。可以再点一次，或使用系统输入法语音。";
+      return;
+    }
+
+    if (hasVoiceText) {
+      playSound("reveal");
+      showToast("口语答案已写入。");
+    }
+  };
+
+  try {
+    recognition.start();
+  } catch {
+    if (status) status.textContent = "语音启动失败，请使用系统输入法语音。";
+  }
+}
+
 function appendVoiceText(currentText, addedText, field) {
   const current = currentText.trim();
   const added = addedText.trim();
@@ -770,6 +956,18 @@ function getCompletedCheckInCount() {
 
   if (today?.completed) completedDates.add(today.date);
   return completedDates.size;
+}
+
+function getTodayGroupInfo() {
+  return {
+    current: Math.max(1, Math.ceil(uiState.session.length / getReviewLimit())),
+    max: getReviewGroupLimit()
+  };
+}
+
+function getRemainingDueCount() {
+  const sessionIds = new Set(uiState.session.map((entry) => entry.id));
+  return getDueItems().filter((item) => !sessionIds.has(item.id)).length;
 }
 
 function getStageText(reviewCount) {
