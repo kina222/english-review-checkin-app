@@ -3,6 +3,7 @@ const STORAGE_KEY = "english-review-checkin:v1";
 const SESSION_KEY = "english-review-checkin:today-session:v1";
 const SESSION_DATE_KEY = "english-review-checkin:today-session-date:v1";
 const REVIEW_LIMIT = 15;
+const REVIEW_GROUP_LIMIT = 5;
 const REVIEW_INTERVALS = [1, 3, 7, 15, 30];
 
 const emptyState = {
@@ -141,6 +142,48 @@ export function saveTodaySession(session, date = new Date()) {
   localStorage.setItem(SESSION_KEY, JSON.stringify(session));
 }
 
+export function addReviewGroup(date = new Date()) {
+  const session = getTodaySession(date);
+  const maxCount = REVIEW_LIMIT * REVIEW_GROUP_LIMIT;
+
+  if (session.length >= maxCount) {
+    return {
+      status: "maxed",
+      addedCount: 0,
+      session
+    };
+  }
+
+  const sessionIds = new Set(session.map((entry) => entry.id));
+  const nextItems = getDueItems(date)
+    .filter((item) => !sessionIds.has(item.id))
+    .slice(0, Math.min(REVIEW_LIMIT, maxCount - session.length));
+
+  if (!nextItems.length) {
+    return {
+      status: "empty",
+      addedCount: 0,
+      session
+    };
+  }
+
+  const nextSession = [
+    ...session,
+    ...nextItems.map((item) => ({
+      id: item.id,
+      promptSide: Math.random() > 0.5 ? "english" : "chinese",
+      status: "pending"
+    }))
+  ];
+
+  saveTodaySession(nextSession, date);
+  return {
+    status: "added",
+    addedCount: nextItems.length,
+    session: nextSession
+  };
+}
+
 export function clearTodaySession() {
   localStorage.removeItem(SESSION_DATE_KEY);
   localStorage.removeItem(SESSION_KEY);
@@ -267,6 +310,10 @@ export function importBackup(backup) {
 
 export function getReviewLimit() {
   return REVIEW_LIMIT;
+}
+
+export function getReviewGroupLimit() {
+  return REVIEW_GROUP_LIMIT;
 }
 
 export function toDateOnly(value) {
